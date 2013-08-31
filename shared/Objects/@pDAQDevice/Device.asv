@@ -1,0 +1,103 @@
+
+classdef Device
+    properties
+       taskHandle = -1;
+       isprimary = 0; %By default this is not master device 
+       deviceMap %Will contain device lines
+       timeLine %Contains information about the entire time line
+       sampleRate %Contains information about sampling rate for device
+       rawStorage %Will contain parallel device based data
+       initialized = 0; %Initialized status
+    end
+    
+    methods
+        %Accessor Methods
+        function obj = set.taskHandle(obj,value)
+           obj.taskHandle = value;  
+        end
+        function value = get.taskHandle(obj)
+           value = obj.taskHandle; 
+        end
+        
+        function obj = set.isprimary(obj,value)
+           obj.isprimary = value;  
+        end
+        function value = get.isprimary(obj)
+           value = obj.isprimary; 
+        end
+        
+        function obj = set.deviceMap(obj,value)
+           obj.deviceMap = value;  
+        end
+        function value = get.deviceMap(obj)
+           value = obj.deviceMap; 
+        end
+               
+        function obj = set.timeLine(obj,value)
+           obj.timeLine = value;  
+        end
+        function value = get.timeLine(obj)
+           value = obj.timeLine; 
+        end
+        
+        function obj = set.rawStorage(obj,value)
+            if(obj.initialized == 1)
+                error('Cannot set storage! Device has been initalized!')
+            else
+                obj.rawStorage = value;  
+            end
+        end
+        function value = get.rawStorage(obj)
+           value = obj.rawStorage; 
+        end
+        
+        function obj = set.sampleRate(obj,value)
+           obj.sampleRate = value;  
+        end
+        function value = get.sampleRate(obj)
+           value = obj.sampleRate; 
+        end
+        
+        %Main Functions
+        function obj = initialize(obj)
+            %This function is responsible for creating the total 
+            %array that will contain the analog/digital data.
+            %This REQURIES timeLine to be setup along with sampleRate
+            %Once initalized device cannot be changed. To change it must
+            %be reset first.
+            
+            obj.rawStorage = cell(1, 2);
+            obj.rawStorage(1) = {zeros(1,obj.deviceMap.digitalLinesCount*obj.timeLine.duration*obj.sampleRate)};
+            obj.rawStorage(2) = {zeros(1,obj.deviceMap.analogLinesCount*obj.timeLine.duration*obj.sampleRate)};
+            
+            obj.initialized = 1; %Initialization Lock            
+        end
+        
+        function obj = addChannelData(obj,lineIndex, startTime, data)
+            
+            lines = obj.deviceMap.lineCollection;
+            
+            if(~lines.containsKey(lineIndex))
+                error('Line is not present cannot add data!')
+            else
+                line = lines.get(lineIndex);
+                ap = startTime*obj.sampleRate;
+                
+                if(size(line) == 3)
+                    %Digital Line
+                    ap = ap*obj.deviceMap.digitalLinesCount + line.get(1);
+                    
+                    for i = 1:size(data)
+                       obj.rawStorage{1} 
+                    end
+                else
+                    %Analog Line
+                    ap = ap*obj.deviceMap.analogLinesCount + line.get(1);
+                                        
+                end
+            end
+        end
+        
+        
+    end
+end

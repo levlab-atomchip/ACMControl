@@ -1,0 +1,45 @@
+2012-07-27
+**Version 0.1**
+
+2012-07-29
+*Added function 'TextSave'
+*Edited RunTemplate.m to save variable 'AllFiles' in place of 'variablesTXT'
+NOTE: may require changes to 'Define.m' files
+
+2012-07-31
+*Updated DDS Arduino interface
+-No longer need to flash Arduino, transfers new sequence via USB
+-SPI library used to transfer sequence to DDS
+-Updated 'Experiment' object to compile DDS
+-Updated 'uploadArduino'
+-Now obsolete function 'genhex'
+-Must change SCLK to Arduino output 13, SDIO_0 to 11
+
+2012-08-01
+*Added function 'resetArduino'
+
+2012-08-02
+**Version 0.2**
+
+
+
+
+2012-08-02
+*Digital lines can now accept number 1 or 0 for 'on' ('open') or 'off' ('closed')
+-Updated DigitalLineData object
+
+2012-08-03
+*Added Control GUI to shared
+-Replaced all directory specific calls with relative calls
+*Added functions 'resetDDS' and 'resetArdDDS'
+-resetDDS requires hardwired DDSReset port/line
+-resetArdDDS clears the Arduino and resets the DDS
+
+2012-08-06
+*added cd(fileparts(mfilename('fullpath'))) call to 'runfiles.m' function (line 31)
+
+2012-10-22
+*minor change to addLine() for analog lines: added 7 input option
+*changed load() function of SubBlocks
+-tests with strcmp() rather than strfind()
+-if statement uses any(test) rather than ~isempty(test)
