@@ -11,14 +11,14 @@ M = 53; %Number of columns in the sequence
 SAMPLE_RATE = 1/dt; %Hz, 10 kHz sample rate
 
 %% Sequence logics
-SUBDOP =1;
-OPTPUMP =1;
-HYBRID =1;
-RFEVAP =1;
-DIPOLE =1;
+SUBDOP =0;
+OPTPUMP =0;
+HYBRID =0;
+RFEVAP =0;
+DIPOLE =0;
 OPTEVAP =0;
-MOVEDIPOLE =1; % imaging line 2 = round trip
-MACROCAPTURE =1;
+MOVEDIPOLE =0; % imaging line 2 = round trip
+MACROCAPTURE =0;
 MACROCOMPRESS = 0;
 MICROCAPTURE =0;
 
@@ -44,7 +44,7 @@ ArmsMicroCal = 0.4; %A/Vset
 DimpleMicroCal = 0.4;
 
 %% For Imaging
-IMAGING = 4; %Imaging line switch; 2 is along x axis in octagon, 3 odt axis, 4 is horizontal in Magellan
+IMAGING = 2; %Imaging line switch; 2 is along x axis in octagon, 3 odt axis, 4 is horizontal in Magellan
 switch IMAGING
     case 4
         disp('Imaging in Magellan')

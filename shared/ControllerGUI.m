@@ -23,7 +23,7 @@ function varargout = ControllerGUI(varargin)
 
 % Edit the above text to modify the response to help ControllerGUI
 
-% Last Modified by GUIDE v2.5 11-Jul-2012 14:00:51
+% Last Modified by GUIDE v2.5 30-Aug-2013 19:11:55
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -106,6 +106,7 @@ if strcmp(RunDefined,'off')
 end
 set(handles.DataMode_rbtn,'enable','off')
 set(handles.NormalMode_rbtn,'enable','off')
+set(handles.randomrun_btn,'enable','off')
 for i = 1:26
     runEnabled{i} = get(handles.(['RunFile' num2str(i)]),'enable');
     set(handles.(['RunFile' num2str(i)]),'enable','off')
@@ -254,6 +255,7 @@ for i = 1:26
 end
 set(handles.DataMode_rbtn,'enable','on')
 set(handles.NormalMode_rbtn,'enable','on')
+set(handles.randomrun_btn, 'enable', 'on')
 
 function FolderButtons(hObject, eventdata, handles, n)
 cd(fileparts(mfilename('fullpath')))
@@ -1178,3 +1180,14 @@ function cleardds_btn_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 run([fileparts(mfilename('fullpath')) '\Functions\resetArdDDS'])
+
+
+% --- Executes on button press in randomrun_btn.
+function randomrun_btn_Callback(hObject, eventdata, handles)
+% hObject    handle to randomrun_btn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+runorder = randperm(26);
+for i = 1:26
+    ControllerGUI('RunButtons',hObject,eventdata,guidata(hObject),runorder(i))
+end
