@@ -1,5 +1,5 @@
 clc
-AdjContParValue = '0';
+AdjContParValue = '1m';
 NumOfTOF = 1;
 
 uploadArduino('DDSCode1');

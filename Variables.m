@@ -11,11 +11,11 @@ M = 53; %Number of columns in the sequence
 SAMPLE_RATE = 1/dt; %Hz, 10 kHz sample rate
 
 %% Sequence logics
-SUBDOP =0;
-OPTPUMP =0;
-HYBRID =0;
-RFEVAP =0;
-DIPOLE =0;
+SUBDOP =1;
+OPTPUMP =1;
+HYBRID =1;
+RFEVAP =1;
+DIPOLE =1;
 OPTEVAP =0;
 MOVEDIPOLE =0; % imaging line 2 = round trip
 MACROCAPTURE =0;
@@ -84,6 +84,7 @@ switch IMAGING
         YBias =0;
         ZBias = 0;        
         MacroImgBias = 0 / MacroBiasCal;
+        magOnTime = 1e-3; %test
         
         CameraLine = 'CameraTrigger';
     case 3
@@ -399,12 +400,17 @@ if SIGMINUS
     DipoleBiasSweep = 1;
 end
 
+% ODTHoldTime = [1e-3, 0];
+% DipoleLoadHoldTime = 1e-3;
+
 if SIGPLUS
 %     DipoleEndBGrad = -.05; %Best
     DipoleEndBGrad = -.05; %Test
     DipoleBSweepTime = 2; %Test
     Evap2SweepTime = DipoleBSweepTime-dt; %seconds
-    DipoleLoadHoldTime =1e-3;
+%     DipoleLoadHoldTime =1e-3; % why is this the default?
+    DipoleLoadHoldTime = [1e-3, 5, 10, 15, 20, 25, 30];
+    
     DipoleBOffSweep = 100e-3;
 %     DipoleParaFreq =linspace(1.8e3,2.3e3,11);
 %     DipoleParaAmp = 1;
