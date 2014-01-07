@@ -39,7 +39,11 @@ for j = 1:J
     CurrContPar = ContPar(j);
     eval([ContParName '=' num2str(CurrContPar) ';']);
     DepVariables
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
     disp(['Compiling Files for Parameter ' num2str(j) ' of ' num2str(J)])
     
     %% Experiment

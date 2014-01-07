@@ -1,12 +1,12 @@
 clc
-AdjContParValue = '0';
+AdjContParValue = '10';
 NumOfTOF = 1;
 
-uploadArduino('DDSCode1');
+uploadArduino('DDSCode5');
 
 for CurrTOFNum = 1:NumOfTOF
     
-    var = ['ACMBlock' num2str(1) '_' num2str(CurrTOFNum)];
+    var = ['ACMBlock' num2str(5) '_' num2str(CurrTOFNum)];
     load(var);
     
     block = eval('ACMBlock');

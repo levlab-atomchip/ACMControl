@@ -22,9 +22,15 @@ HYBRID =1;
 RFEVAP =1;
 DIPOLE =1;
 OPTEVAP =0;
+<<<<<<< HEAD
 MOVEDIPOLE =1; % imaging line 2 = round trip
 MACROCAPTURE =1;
 MACROCOMPRESS =0;
+=======
+MOVEDIPOLE =0; % imaging line 2 = round trip
+MACROCAPTURE =0;
+MACROCOMPRESS = 0;
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
 MICROCAPTURE =0;
 
 SIGPLUS = 1;
@@ -54,7 +60,11 @@ ArmsMicroCal = 0.4; %A/Vset
 DimpleMicroCal = 0.4;
 
 %% For Imaging
+<<<<<<< HEAD
 IMAGING =4; %Imaging line switch; 2 is along x axis in octagon, 3 odt axis, 4 is horizontal in Magellan
+=======
+IMAGING = 2; %Imaging line switch; 2 is along x axis in octagon, 3 odt axis, 4 is horizontal in Magellan
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
 switch IMAGING
     case 4
         disp('Imaging in Magellan')
@@ -112,7 +122,11 @@ switch IMAGING
 %         ZBias = 0;
         
         MacroImgBias = 0 / MacroBiasCal;
+<<<<<<< HEAD
         magOnTime = 1*ms; %test
+=======
+        magOnTime = 1e-3; %test
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
         
         CameraLine = 'CameraTrigger';
     case 3
@@ -456,8 +470,13 @@ if SIGMINUS
     DipoleBiasSweep = 1;
 end
 
+<<<<<<< HEAD
 % ODTHoldTime = [1*ms, 0];
 % DipoleLoadHoldTime = 1*ms;
+=======
+% ODTHoldTime = [1e-3, 0];
+% DipoleLoadHoldTime = 1e-3;
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
 
 if SIGPLUS
     DipoleEndBGrad = -.05; %Best
@@ -465,6 +484,7 @@ if SIGPLUS
     DipoleBSweepTime = 2; %Best
 %     DipoleBSweepTime = 2*.01; %Test
     Evap2SweepTime = DipoleBSweepTime-dt; %seconds
+<<<<<<< HEAD
     DipoleLoadHoldTime =2001*ms; % why is this the default?
 %     DipoleLoadHoldTime = [1*ms, 5, 10, 15, 20, 25, 30, 35, 40];
     
@@ -473,6 +493,14 @@ if SIGPLUS
 %     DipoleParaFreq =linspace(2500,3500,20);
     DipoleParaFreq =800;
     DipoleParaAmp = 0;
+=======
+%     DipoleLoadHoldTime =1e-3; % why is this the default?
+    DipoleLoadHoldTime = [1e-3, 5, 10, 15, 20, 25, 30];
+    
+    DipoleBOffSweep = 100e-3;
+%     DipoleParaFreq =linspace(1.8e3,2.3e3,11);
+%     DipoleParaAmp = 1;
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
     
     ByRates = 0;
     

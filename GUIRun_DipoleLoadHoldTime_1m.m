@@ -1,12 +1,12 @@
 clc
-AdjContParValue = '0';
+AdjContParValue = '1m';
 NumOfTOF = 1;
 
-uploadArduino('DDSCode1_b');
+uploadArduino('DDSCode1');
 
 for CurrTOFNum = 1:NumOfTOF
     
-    var = ['ACMBlock' num2str(1) '_' num2str(CurrTOFNum) '_' 'b'];
+    var = ['ACMBlock' num2str(1) '_' num2str(CurrTOFNum)];
     load(var);
     
     block = eval('ACMBlock');
@@ -23,13 +23,12 @@ for CurrTOFNum = 1:NumOfTOF
     end
     
     while 1
-        if ls('I:\lock')
-            continue
+        [stat,saveAttrib] = fileattrib('Z:\Data\ACM Data\ImagingData\ACMRunData.mat');
+        if saveAttrib.UserWrite
+            break
         end
-        save('I:\ACMRunData.mat','ContParName','CurrContPar','CurrTOF','AdjContParValue','NumOfTOF','CurrTOFNum','AllFiles','-append');
-        break
-    end
-    
+    end 
+    save('Z:\Data\ACM Data\ImagingData\ACMRunData.mat','ContParName','CurrContPar','CurrTOF','AdjContParValue','NumOfTOF','CurrTOFNum','AllFiles','-append');
     
     disp(['[' var ']']);
     disp('-----------------------------')

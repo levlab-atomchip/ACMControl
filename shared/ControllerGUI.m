@@ -23,7 +23,11 @@ function varargout = ControllerGUI(varargin)
 
 % Edit the above text to modify the response to help ControllerGUI
 
+<<<<<<< HEAD
 % Last Modified by GUIDE v2.5 15-Oct-2013 14:10:12
+=======
+% Last Modified by GUIDE v2.5 30-Aug-2013 19:11:55
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -104,8 +108,14 @@ RunDefined = get(handles.(['RunFile' num2str(n)]),'enable');
 if strcmp(RunDefined,'off')
     return
 end
+<<<<<<< HEAD
 % set(handles.DataMode_rbtn,'enable','off')
 % set(handles.NormalMode_rbtn,'enable','off')
+=======
+set(handles.DataMode_rbtn,'enable','off')
+set(handles.NormalMode_rbtn,'enable','off')
+set(handles.randomrun_btn,'enable','off')
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
 for i = 1:26
     runEnabled{i} = get(handles.(['RunFile' num2str(i)]),'enable');
     set(handles.(['RunFile' num2str(i)]),'enable','off')
@@ -277,8 +287,14 @@ for i = 1:26
     tempStr =  runEnabled{i};
     set(handles.(['RunFile' num2str(i)]),'enable',tempStr)
 end
+<<<<<<< HEAD
 % set(handles.DataMode_rbtn,'enable','on')
 % set(handles.NormalMode_rbtn,'enable','on')
+=======
+set(handles.DataMode_rbtn,'enable','on')
+set(handles.NormalMode_rbtn,'enable','on')
+set(handles.randomrun_btn, 'enable', 'on')
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
 
 function FolderButtons(hObject, eventdata, handles, n)
 cd(fileparts(mfilename('fullpath')))
@@ -1217,6 +1233,7 @@ function cleardds_btn_Callback(hObject, eventdata, handles)
 run([fileparts(mfilename('fullpath')) '\Functions\resetArdDDS'])
 
 
+<<<<<<< HEAD
 % --- Executes on button press in runall_btn.
 function runall_btn_Callback(hObject, eventdata, handles)
 % hObject    handle to runall_btn (see GCBO)
@@ -1278,4 +1295,14 @@ function runall_etxt_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+=======
+% --- Executes on button press in randomrun_btn.
+function randomrun_btn_Callback(hObject, eventdata, handles)
+% hObject    handle to randomrun_btn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+runorder = randperm(26);
+for i = 1:26
+    ControllerGUI('RunButtons',hObject,eventdata,guidata(hObject),runorder(i))
+>>>>>>> 4a1ccf7d7d3baea4d17d5e8ef44e2dbe07aa1f63
 end
