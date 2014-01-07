@@ -20,8 +20,14 @@ IMG2Shutter.ss('closed',0,'end')
 CameraShutter.ss('closed',0,'end')
 
 ODTAOM.ss('on',0,'end')
-ODTVVA.ss(MaxODTPwr,0,'end')
 
+if OPTEVAP && RECOMPRESSODT
+    ODTVVA.ss(RecompressValue,0,'end')
+elseif OPTEVAP
+    ODTVVA.ss(OptEvapODTVVAEnd,0,'end')
+else
+    ODTVVA.ss(MaxODTPwr,0,'end')
+end
 
 RFSwitch.ss('off',0,'end')
 
@@ -39,6 +45,8 @@ MagellanRepumper.ss('off',0,'end')
 
 SoloistTrigger.ss('off',0,'end')
 SoloistTrigger.ss('on',0,5e-3)
+
+% disp('Commented out round trip in movedipole')
 if IMAGING == 2
     SoloistTrigger.ss('on',TransitTime+MoveHoldTime,TransitTime+MoveHoldTime+10e-3)
 end
@@ -77,3 +85,5 @@ MagellanCompressCoil.linear(CompCoilMoveDipole,0,TransitTime/2.0,TransitTime)
 %% DDS
 BeatNoteFreq.setfreq(ImageFreq,0,'end')
 RFFreq.setfreq(Evap2LowFreq,0,'end')
+
+% ODTVVA.sinoffset(MaxODTPwr,ODTParaAmp,ODTParaFreq,MoveDipoleTime-MoveParaTime,'end')

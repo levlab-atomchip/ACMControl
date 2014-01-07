@@ -1,4 +1,4 @@
-function runfiles(name,value,j,numTOFs,ddsName)
+function runfiles(name,value,j,numTOFs,ddsName,runID)
 
 mag = floor(log10(abs(value)));
 CurrContParChange = value/10^(mag);
@@ -37,6 +37,7 @@ RunText = regexprep(RunText,'REPLACEj', num2str(j));
 RunText = regexprep(RunText,'REPLACEN', num2str(numTOFs));
 RunText = regexprep(RunText,'REPLACEValue', AdjustedValue);
 RunText = regexprep(RunText,'REPLACEDDS', ddsName);
+RunText = regexprep(RunText,'REPLACERunID', runID);
 RunNew = fopen([RunFileName '.m'], 'w');
 fprintf(RunNew,'%c',RunText);
 fclose(RunNew);

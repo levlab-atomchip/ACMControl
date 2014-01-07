@@ -38,6 +38,7 @@ classdef Experiment < dynamicprops
             obj.calledSubBlocks = 0;
             obj.currLine = '';
             obj.ddsInputArray = cell(0,1);
+            obj.explength = 0;
         end
         
         %Accessors
@@ -120,16 +121,17 @@ classdef Experiment < dynamicprops
             obj.calledSubBlocks(length(obj.calledSubBlocks):position) = 0;
         end
         
-        function ddscompile(obj,parnum,ddsCOMPort)
+        function ddscompile(obj,parnum,ddsCOMPort,inarrays,runID)
             wait = round(500e-6/obj.dt);
             expprops = properties(obj);
             writes = [];
             ddslines = {};
             channels = [];
             for i = 1:length(expprops)
-                if strcmp('DDSLineData',class(obj.(expprops{i})))
+                if strcmp('DDSLineData',class(obj.(expprops{i}))) && ~obj.(expprops{i}).hashable
                     lineName = expprops{i};
                     obj.(lineName).freqcompile
+%                     disp(sprintf('Freq Compiling %s', lineName))
                     writes = [writes; obj.(lineName).Writes];
                     switch writes(end,end)
                         case 0
@@ -147,8 +149,11 @@ classdef Experiment < dynamicprops
             end
             
             if isempty(ddslines)
+                ddsInputArrays = inarrays;
+                save(['DDSCode' num2str(parnum),'_',runID],'ddsInputArrays','ddsCOMPort')
                 return;
             end
+%             disp(sprintf('ddslines{1} : %s', ddslines{1}))
             ddslength = length(obj.(ddslines{1}).freqarray);
             obj.ddsWrite = ones(ddslength,1);
             obj.ddsReset = zeros(ddslength,1);
@@ -175,7 +180,7 @@ classdef Experiment < dynamicprops
                                     counter = counter+1;
                                     break
                                 elseif k==size(writes,1)
-                                    error('problem')
+                                    error('problem (seriously, that is the error message Nate throws here.  Problem.)')
                                 end
                             end
                         end
@@ -208,16 +213,19 @@ classdef Experiment < dynamicprops
                 end
                 
                 if idur==-Inf
+%                     disp('-Inf')
                     obj.writenoreset(istart,ddslines)
                     istart = istart+wait;
                     obj.writejump(lineName,fjump,istart)
                 
                 elseif isnan(idur)
+%                     disp('NaN')
                     obj.writereset(istart,ddslines)
                     istart = istart+wait;
                     obj.writejump(lineName,fjump,istart)
                     
                 elseif isinf(idur)
+%                     disp('Inf')
                     if istart==1
                         istart = istart+wait;
                     end
@@ -228,9 +236,10 @@ classdef Experiment < dynamicprops
                     
                 end
             end
-            
+            disp(writes)
             ddsInputArrays = obj.ddsInputArray;
-            save(['DDSCode' num2str(parnum)],'ddsInputArrays','ddsCOMPort')
+%             save(['DDSCode' num2str(parnum)],'ddsInputArrays','ddsCOMPort')
+            save(['DDSCode' num2str(parnum),'_',runID],'ddsInputArrays','ddsCOMPort')
 %             genhex(obj.ddsInputArray,['DDSCode' num2str(parnum)])
         end
         
@@ -452,6 +461,27 @@ classdef Experiment < dynamicprops
             obj.ddsWrite(sum(lastupdate)+1) = 0;
         end
         
+        function varargout = loadAllSubBlocks(obj,expName,lines)
+            if ~any(strcmp(obj.subBlocks,'Reset')) || ~any(strcmp(obj.subBlocks,'Imaging'))
+                error('Must include ''Imaging'' and ''Reset'' SubBlocks.')
+            end
+            lSBs = '';
+            for i = 1:length(obj.subBlocks)
+                if isempty(obj.subBlocks{i})
+                    continue
+                end
+                
+                obj.(obj.subBlocks{i}).load(expName,lines)
+                
+                lSBs = [lSBs obj.subBlocks{i} ' '];
+            end
+%             for j = 1:length(obj.lines)
+%                 disp(size(obj.(obj.lines{j})))
+%             end
+            varargout = {lSBs};
+            disp(['     Experiment SubBlocks: ' lSBs])
+        end
+
         function varargout = loadExpSubBlocks(obj,expName,lines)
             if ~any(strcmp(obj.subBlocks,'Reset')) || ~any(strcmp(obj.subBlocks,'Imaging'))
                 error('Must include ''Imaging'' and ''Reset'' SubBlocks.')
@@ -549,12 +579,222 @@ classdef Experiment < dynamicprops
             end
         end
         
+        function block = fillblockHashed(obj,block,ddslines,loadedBlock)
+            DDSChs = [];
+            DDSLines = {};
+            addArgs={};
+            
+            for i = 1:length(obj.lines)
+                addArgs = {};
+                lineName = obj.lines{i};
+                
+                if ~obj.(lineName).hashable || ~loadedBlock
+                    
+                    switch class(obj.(lineName))
+                        case 'AnalogLineData'
+                            addArgs = {obj.(lineName).min obj.(lineName).max};
+                        case 'DDSLineData'
+                            DDSChs = [DDSChs obj.(lineName).ch];
+                            DDSLines = [DDSLines, lineName];
+                            continue;
+                    end
+%                     disp(sprintf('Adding line  %s',lineName))
+                    devLine = obj.(lineName).devLine;
+                    idev = find(devLine=='/',1,'first')-1;
+                    dev = devLine(1:idev);
+                    
+                    if(block.deviceNames.containsKey(dev))
+                        deviceIndex = block.deviceNames.get(dev);
+                        if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+                            block = block.addLine(dev,lineName,devLine,addArgs{:});
+%                             disp('Added a line!')
+                        end
+                    end
+                end
+            end
+            
+            if ~isempty(DDSChs)
+                dev = ddslines.write(1:4);
+                lineName = 'DDSWrite';
+                deviceIndex = block.deviceNames.get(dev);
+                if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+                    block = block.addLine(dev,lineName,ddslines.write);    
+%                     disp(sprintf('Added %s',lineName))
+                end
+                
+                dev = ddslines.ioupdate(1:4);
+                lineName = 'DDSIOUpdate';
+                deviceIndex = block.deviceNames.get(dev);
+                if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+                    block = block.addLine(dev,lineName,ddslines.ioupdate);  
+%                     disp(sprintf('Added %s',lineName))
+                end
+                
+                dev = ddslines.reset(1:4);
+                lineName = 'DDSReset';
+                deviceIndex = block.deviceNames.get(dev);
+                if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+                    block = block.addLine(dev,lineName,ddslines.reset);  
+%                     disp(sprintf('Added %s',lineName))
+                end
+%                 block = block.addLine(ddslines.write(1:4), 'DDSWrite',ddslines.write);
+%                 block = block.addLine(ddslines.ioupdate(1:4), 'DDSIOUpdate',ddslines.ioupdate);
+%                 block = block.addLine(ddslines.reset(1:4), 'DDSReset',ddslines.reset);
+                for i = 1:length(DDSChs)
+                    switch DDSChs(i)
+                        case 0
+                            dev = ddslines.profile0(1:4);
+                            lineName = 'DDSProfile0';
+                            deviceIndex = block.deviceNames.get(dev);
+                            if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+                                block = block.addLine(dev,lineName,ddslines.profile0);
+%                                 disp(sprintf('Added %s',lineName))
+                            end
+                        case 1
+                            dev = ddslines.profile1(1:4);
+                            lineName = 'DDSProfile1';
+                            deviceIndex = block.deviceNames.get(dev);
+                            if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+                                block = block.addLine(dev,lineName,ddslines.profile1);
+%                                 disp(sprintf('Added %s',lineName))
+                            end
+                        case 2
+                            dev = ddslines.profile2(1:4);
+                            lineName = 'DDSProfile2';
+                            deviceIndex = block.deviceNames.get(dev);
+                            if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+                                block = block.addLine(dev,lineName,ddslines.profile2);
+%                                 disp(sprintf('Added %s',lineName))
+                            end
+                        case 3
+                            dev = ddslines.profile3(1:4);
+                            lineName = 'DDSProfile3';
+                            deviceIndex = block.deviceNames.get(dev);
+                            if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+                                block = block.addLine(dev,lineName,ddslines.profile3);
+%                                 disp(sprintf('Added %s',lineName))
+                            end
+                    end
+                end
+            end
+            
+            if ~loadedBlock
+%                 disp('Initializing')
+                block = block.initializeAllDevices();
+%                 disp('Done Initializing')
+            end
+            
+            for i = 1:length(obj.lines)
+                lineName = obj.lines{i};
+                if ~obj.(lineName).hashable || ~loadedBlock
+                    
+                    if strcmp(class(obj.(lineName)),'DDSLineData')
+                        continue;
+                    end
+%                     disp(sprintf('Adding Line Data For %s',lineName))
+                    devLine = obj.(lineName).devLine;
+          
+                    idev = find(devLine=='/',1,'first')-1;
+                    dev = devLine(1:idev);
+%                     disp(size(block.devices{2,2}.rawStorage{2}))
+%                     disp(sprintf('Adding line data: %s', lineName))
+%                     disp(sprintf('length of data: %i', length(obj.(lineName).array)))
+                    block = block.addLineData(dev, lineName, 0, obj.(lineName).array);
+%                     disp(size(block.devices{2,2}.rawStorage{2}))
+                end
+            end
+%             if ~isempty(DDSChs)
+%                 dev = ddslines.write(1:4);
+%                 lineName = 'DDSWrite';
+%                 deviceIndex = block.deviceNames.get(dev);
+%                 if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+%                     block = block.addLineData(dev,lineName,ddslines.write);                         
+%                 end
+%                 
+%                 dev = ddslines.ioupdate(1:4);
+%                 lineName = 'DDSIOUpdate';
+%                 deviceIndex = block.deviceNames.get(dev);
+%                 if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+%                     block = block.addLineData(dev,lineName,ddslines.ioupdate);                         
+%                 end
+%                 
+%                 dev = ddslines.reset(1:4);
+%                 lineName = 'DDSReset';
+%                 deviceIndex = block.deviceNames.get(dev);
+%                 if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+%                     block = block.addLineData(dev,lineName,ddslines.reset);                         
+%                 end
+% %                 block = block.addLine(ddslines.write(1:4), 'DDSWrite',ddslines.write);
+%                 block = block.addLine(ddslines.ioupdate(1:4), 'DDSIOUpdate',ddslines.ioupdate);
+%                 block = block.addLine(ddslines.reset(1:4), 'DDSReset',ddslines.reset);
+%                 for i = 1:length(DDSChs)
+%                     switch DDSChs(i)
+%                         case 0
+%                             dev = ddslines.profile0(1:4);
+%                             lineName = 'DDSProfile0';
+%                             deviceIndex = block.deviceNames.get(dev);
+%                             if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+%                                 block = block.addLineData(dev,lineName,ddslines.profile0);                         
+%                             end
+%                         case 1
+%                             dev = ddslines.profile1(1:4);
+%                             lineName = 'DDSProfile1';
+%                             deviceIndex = block.deviceNames.get(dev);
+%                             if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+%                                 block = block.addLineData(dev,lineName,ddslines.profile1);                         
+%                             end
+%                         case 2
+%                             dev = ddslines.profile2(1:4);
+%                             lineName = 'DDSProfile2';
+%                             deviceIndex = block.deviceNames.get(dev);
+%                             if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+%                                 block = block.addLineData(dev,lineName,ddslines.profile2);                         
+%                             end
+%                         case 3
+%                             dev = ddslines.profile3(1:4);
+%                             lineName = 'DDSProfile3';
+%                             deviceIndex = block.deviceNames.get(dev);
+%                             if ~block.devices{deviceIndex,2}.deviceMap.lineCollection.containsKey(lineName)                
+%                                 block = block.addLineData(dev,lineName,ddslines.profile3);                         
+%                             end
+%                     end
+%                 end
+%             end
+            
+            if ~isempty(DDSChs) 
+                for i = 1:length(DDSLines)
+                    if ~obj.(DDSLines{i}).hashable
+                        block = block.addLineData(ddslines.write(1:4), 'DDSWrite',0, obj.ddsWrite);
+                        block = block.addLineData(ddslines.reset(1:4), 'DDSReset',0, obj.ddsReset);
+                        block = block.addLineData(ddslines.ioupdate(1:4), 'DDSIOUpdate',0, obj.ddsIOUpdate);
+                        for i = 1:length(DDSChs)
+                            switch DDSChs(i)
+                                case 0
+                                    block = block.addLineData(ddslines.profile0(1:4), 'DDSProfile0',0, obj.ddsProfile0);
+                                case 1
+                                    block = block.addLineData(ddslines.profile1(1:4), 'DDSProfile1',0, obj.ddsProfile1);
+                                case 2
+                                    block = block.addLineData(ddslines.profile2(1:4), 'DDSProfile2',0, obj.ddsProfile2);
+                                case 3
+                                    block = block.addLineData(ddslines.profile3(1:4), 'DDSProfile3',0, obj.ddsProfile3);
+                            end
+                            
+                        end
+                        break
+                    end
+                end
+            end
+            
+            
+        end
         
         function checks(obj,camera)
             obj.checkSubBlocks
             obj.checkLines
             if nargin == 2
-                obj.checkimaging(camera)
+                if ~obj.(camera).hashable
+                    obj.checkimaging(camera)
+                end
             end
         end
         
@@ -584,30 +824,41 @@ classdef Experiment < dynamicprops
         function checkLines(obj)
             nanflag = 0;
             lengthflag = 0;
-            maxlength = length(obj.(obj.lines{1}).array);
-            for i = 1:length(obj.lines)
-                if length(obj.(obj.lines{i}).array)~=maxlength
-                    lengthflag = 1;
-                    maxlength = max([maxlength length(obj.(obj.lines{i}).array)]);
+            maxlength = 0;
+            for i=1:length(obj.lines)
+                if length(obj.(obj.lines{i}).array) > maxlength
+                    maxlength = length(obj.(obj.lines{i}).array);
                 end
-                
-                nans{i} = find(isnan(obj.(obj.lines{i}).array));
-                if ~isempty(nans{i})
-                    d = [diff(nans{i})' 1];
-                    times{i} = num2str(nans{i}(1)*obj.dt);
-                    for j = 2:length(d)
-                        if d(j)==1 && d(j-1)~=1
-                            times{i} = [times{i} ', ' num2str(nans{i}(j)*obj.dt)];
-                        elseif d(j-1)==1 && d(j)~= 1
-                            times{i} = [times{i} '-' num2str(nans{i}(j)*obj.dt)];
+            end
+            
+%             maxlength = length(obj.(obj.lines{1}).array);
+            for i = 1:length(obj.lines)
+                if ~obj.(obj.lines{i}).hashable && ~obj.(obj.lines{i}).isdds
+                    if length(obj.(obj.lines{i}).array)~=maxlength
+                        disp(sprintf('The Culprit: %s',obj.lines{i}))
+                        disp(sprintf('Hashable: %i',obj.(obj.lines{i}).hashable))
+                        lengthflag = 1;
+                        maxlength = max([maxlength length(obj.(obj.lines{i}).array)]);
+                    end
+
+                    nans{i} = find(isnan(obj.(obj.lines{i}).array));
+                    if ~isempty(nans{i})
+                        d = [diff(nans{i})' 1];
+                        times{i} = num2str(nans{i}(1)*obj.dt);
+                        for j = 2:length(d)
+                            if d(j)==1 && d(j-1)~=1
+                                times{i} = [times{i} ', ' num2str(nans{i}(j)*obj.dt)];
+                            elseif d(j-1)==1 && d(j)~= 1
+                                times{i} = [times{i} '-' num2str(nans{i}(j)*obj.dt)];
+                            end
                         end
+                        if  (length(d)-1)~=0 && d(length(d)-1)==1
+                            times{i} = [times{i} '-' num2str(nans{i}(end)*obj.dt)];
+                        elseif (length(d)-1)~=0
+                            times{i} = [times{i} ', ' num2str(nans{i}(end)*obj.dt)];
+                        end
+                        nanflag = 1;
                     end
-                    if  (length(d)-1)~=0 && d(length(d)-1)==1
-                        times{i} = [times{i} '-' num2str(nans{i}(end)*obj.dt)];
-                    elseif (length(d)-1)~=0
-                        times{i} = [times{i} ', ' num2str(nans{i}(end)*obj.dt)];
-                    end
-                    nanflag = 1;
                 end
             end
             obj.explength = maxlength;
@@ -698,6 +949,7 @@ classdef Experiment < dynamicprops
         end
 
         function checkimaging(obj,camera)
+            
             if ~any(strcmp(camera,obj.lines))
                 error('Imaging line provided is incorrect.')
             end
@@ -719,6 +971,11 @@ classdef Experiment < dynamicprops
             trigs = find(difftrig==ftrigval);
             triglen = diff(find(difftrig,2,'first'));
             trig0 = trigs(1) - (trigs(2) - trigs(1));
+            if obj.(camera).hashable
+                obj.(camera).hash = DataHash([hex2dec(obj.(camera).hash),double(trig0),double(triglen),double(trigger)]);
+                return
+            end
+            
             obj.(camera).array(trig0:(trig0+triglen-1)) = trigger;
         end
         
@@ -771,11 +1028,17 @@ classdef Experiment < dynamicprops
                         expName = inputname(1);
                         obj.(S(1).subs)(expName,obj.lines);
                         
+                    elseif strcmp(S(1).subs,'loadAllSubBlocks')
+                        expName = inputname(1);
+                        varargout = {obj.(S(1).subs)(expName,obj.lines)};
+                        
                     elseif nargout == 0
                         builtin('subsref',obj,S)
                         
                     else
                         varargout =  {builtin('subsref',obj,S)};
+                        
+%                         varargout =  builtin('subsref',obj,S);
                     end
             end
         end
@@ -793,5 +1056,191 @@ classdef Experiment < dynamicprops
                 end
             end
         end
+        
+        function output = makeHashFile(obj,fileName)
+            %%Creates a file of line name and hash value
+            fileID = fopen(fileName,'w+');
+            formatString = '%s,%s\n';
+            for i=1:length(obj.lines)
+                lineName = obj.lines{i};
+                hashValue = obj.(lineName).hash;
+                hashValue = num2str(hashValue);
+%                 disp(lineName)
+%                 disp(hashValue)
+                fprintf(fileID,formatString,lineName,hashValue);
+            end
+        end
+        
+        function output = makeHashStruct(obj)
+            output = struct();
+            for i=1:length(obj.lines)
+                lineName = obj.lines{i};
+                hashValue = obj.(lineName).hash;
+                hashValue = num2str(hashValue);
+                output.(lineName) = hashValue;
+            end
+        end
+        
+        function output = checkAgainstHashFile(obj,fileName)
+            fileID = fopen(fileName, 'r');
+            tline = fgetl(fileID);
+            while ischar(tline)
+                commaLoc = find(tline ==',');
+                lName = tline(1:commaLoc-1);
+%                 lhash = str2num(tline(commaLoc+1:end));
+                lhash = tline(commaLoc+1:end);
+                hashString = num2str(obj.(lName).hash);
+%                 disp(lName)
+%                 disp(lhash)
+                if ~strcmp(lhash,hashString)
+                    obj.(lName).hashable = 0; 
+                end
+                tline = fgetl(fileID);
+            end
+            
+        end
+        
+        
+        
+        function output = checkAgainstHashStruct(obj,hashStruct)
+%             counter = 0;
+            redoDDS = 0;
+            DDSLines = [];
+            for i=1:length(obj.lines)
+                lineName = obj.lines{i};
+                if strcmp('DDSLineData',class(obj.(lineName)))
+                    DDSLines = [DDSLines, i];
+                end
+                if ~strcmp(obj.(lineName).hash,hashStruct.(lineName))
+                    obj.(lineName).hashable = 0;
+                    if strcmp('DDSLineData',class(obj.(lineName)))
+                        redoDDS =1;
+                    end
+%                     counter = counter + 1;
+%                     disp(lineName)
+%                     disp(hashStruct.(lineName))
+                    
+                end
+            end
+            if redoDDS
+                for i=1:length(DDSLines)
+                    obj.(obj.lines{DDSLines(i)}).hashable = 0;
+                end
+            end
+                    
+%             disp(sprintf('MOTPower has %s',obj.MOTPower.hash))
+%             disp(sprintf('Counter: %i', counter))
+        end
+                
+        function output = resetHashable(obj)
+            for i=1:length(obj.lines)
+                lineName = obj.lines{i};
+                obj.(lineName).hashable = 1;
+                obj.(lineName).pass2 = 0;
+                obj.(lineName).hash = DataHash(lineName);
+            end
+        end
+        
+        function output = setSecondPass(obj)
+            for i=1:length(obj.lines)
+                lineName = obj.lines{i};
+                obj.(lineName).pass2 = 1;
+            end
+%             obj.loadAllSubBlocks();
+        end
+        
+        function output = compareHashLists(obj,hashStruct1,hashStruct2)
+            names1 = fieldnames(hashStruct1);
+            names2 = fieldnames(hashStruct2);
+            lengthStruct1 = length(names1);
+            lengthStruct2 = length(names2);
+            output = 0;
+            if lengthStruct1 ~= lengthStruct2
+                output = max(lengthStruct1,lengthStruct2);
+                return
+            end
+            for i=1:lengthStruct1
+                if ~strcmp(names1{i},names2{i})
+                    output = output + 1;                
+                elseif ~strcmp(hashStruct1.(names1{i}),hashStruct2.(names2{i}))
+                    output = output + 1;
+                end
+            end
+        end
+        
+        function output = loadBlock(obj,hashStructIn)
+            [matList, hashList] = makeMATList();
+            
+            minInd = 1;
+            minVal = length(hashStructIn);
+            hashListNames = fieldnames(hashList);
+            for i=1:length(hashListNames)
+                Val = compareHashLists(hashStructIn,hashList.(hashListNames{i}));
+                if Val < minVal
+                    minVal = Val;
+                    minInd = i;
+                end
+            end
+            %Load the block
+            loadBlockString = strcat(hashListNames{minInd},'.mat');
+            ACMBlock = load(loadBlockString,'ACMBlock');
+            ACMBlock = ACMBlock.ACMBlock;
+            %Set hashStructOut
+            hashStructOut = hashList.(hashListNames{minInd});
+            
+            %Load DDSCode
+            underScoreInd = find(hashListNames{minInd} == '_', 1,'first');
+            blockStartInd = strfind(hashListNames{minInd},'Block');
+            blockEndInd = blockStartInd + 5;
+            
+            DDSString = strcat('DDSCode',hashListNames{minInd}(blockEndInd:underScoreInd-1),'_',hashListNames{minInd}(end),'.mat');
+            ddscode = load(DDSString);
+            output = struct();
+            output.ACMBlock = ACMBlock;
+            output.hashStruct = hashStructOut;
+            output.ddscode = ddscode;
+           
+        end
+        
+       
+        
+%         function output = compareHashLists(obj,hashStruct1,hashStruct2)
+%             lengthStruct1 = length(hashStruct1);
+%             lengthStruct2 = length(hashStruct2);
+%             output = 0;
+%             if lengthStruct1 ~= lengthStruct2
+%                 output = max(lengthStruct1,lengthStruct2);
+%                 return
+%             end
+%             for i=1:lengthStruct1
+%                 if hashStruct1{i} ~= hashStruct2{i}
+%                     output = output + 1;
+%                 end
+%             end
+%         end
+        
+        function output = removeLines(obj, block,ddslines)
+            %Removes lines with lines.hashable=0 from block
+            disp(block.devices{1,2}.rawStorage)
+            for i=1:length(obj.lines)
+                lineName = obj.lines{i};
+                if ~obj.(lineName).hashable
+                    if ~strcmp(class(obj.(lineName)),'DDSLineData')               
+                        devLine = obj.(lineName).devLine;
+                        idev = find(devLine=='/',1,'first')-1;
+                        dev = devLine(1:idev);
+                        disp(sprintf('Removed Line %s',lineName))
+                        block = block.removeLine(dev,lineName);
+                    end
+                end
+            end
+            block = block.removeLine('Dev1','DDSWrite');
+            block = block.removeLine('Dev1','DDSReset');
+            block = block.removeLine('Dev1','DDSIOUpdate');
+            block = block.removeLine('Dev1','DDSProfile2');
+            block = block.removeLine('Dev1','DDSProfile3');
+            disp(block.devices{1,2}.rawStorage)
+            output = block;
+        end   
     end
 end

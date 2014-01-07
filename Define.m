@@ -1,19 +1,20 @@
 clc
 clear classes
 ticST = tic;
-delete('ACMBlock*','GUIRUN*','DDSCode*')
+[oldID, runID] = getRunID();
+delete('GUIRUN*')
 % warning on all
 warning off all
 
 % defineRun = 1;
 Variables
 AllFiles = TextSave;
-
+% AllFiles = '';
 %% Setup Control Parameters
 ContParName = 'VOID';
 VOID = 0;
 vars = whos;
-vecvar = {'AllFiles' 'TOFs' 'ans' 'DipoleBiasSweepTimes' 'DipoleBiasSweepValues' 'XSweep' 'YSweep' 'ZSweep' 'MotionProfile' 'MoveSweep' 'acc' 'spd' 'pos'};
+vecvar = {'MOTTime' 'MoveDipoleTime' 'AllFiles' 'TOFs' 'ans' 'DipoleBiasSweepTimes' 'DipoleBiasSweepValues' 'XSweep' 'YSweep' 'ZSweep' 'MotionProfile' 'MoveSweep' 'acc' 'spd' 'pos'};
 for i = 1:length(vars)
     if any(vars(i).size>1) && ~strcmp(vars(i).class,'char') && ~any(strcmp(vecvar,vars(i).name))
         ContParName = vars(i).name;
@@ -28,19 +29,24 @@ else
 end
 disp(['Control Parameter is ' ContParName])
 
+%% Make list of blocks at start
+[matList,hashList] = makeMATList();
+
 for j = 1:J
+    tic
 %     tof = TOFs(1);
     %% Compile
     CurrContPar = ContPar(j);
     eval([ContParName '=' num2str(CurrContPar) ';']);
-    
+    DepVariables
+
     disp(['Compiling Files for Parameter ' num2str(j) ' of ' num2str(J)])
     
     %% Experiment
     ex = Experiment(dt);
 
     %% SubBlocks
-    ex.addSubBlock('LoadMOT', LoadTime, 1)
+    ex.addSubBlock('LoadMOT', MOTTime, 1)
     if SUBDOP
         ex.addSubBlock('SubDop', CoolTime, 2)
     end
@@ -80,6 +86,8 @@ for j = 1:J
     ex.addLine('d','ZShutters','normal',ZPSHUTONTIME,ZPSHUTOFFTIME,'Dev1/port0/line0')
     ex.addLine('d','MOTRepumper','normal','Dev1/port0/line1')
     ex.addLine('d','MOTPower','normal',MOTPSHUTTERON,MOTPSHUTTEROFF,'Dev1/port0/line2')
+%     ex.addLine('d','MOTPower','inverted',MOTPSHUTTERON,MOTPSHUTTEROFF,'Dev1/port0/line2')
+
     ex.addLine('d','ZSAOM','inverted','Dev1/port0/line3')
     ex.addLine('d','CameraTrigger','inverted',0,0,'Dev1/port0/line4')
     ex.addLine('d','Uniblitz','normal',0,100e-3,'Dev1/port0/line5')
@@ -139,67 +147,130 @@ for j = 1:J
     
     
     %% Main Code; NOT Imaging or Reset
-    SBList = ex.loadExpSubBlocks();
+    
+%     tic
+%     loadFile = strcat('ACMBlock1_1_',oldID,'.mat');
+%     load(loadFile,'ACMBlock','hashStruct')
+%     disp('Load Block Time')
+%     toc
+
+%     SBList = ex.loadExpSubBlocks();
     % Add Imaging and Reset; Fill Block
     for tof = 1:numTOFs
-        nex = ex.copy();
-        nex.loadImgRstSubBlocks()
-        nex.checks(CameraLine)
-%         swiCoil = [abs(diff(nex.MOTHelmholtz.array))' 0];
-%         if any(nex.MOTCoil.array(swiCoil)) < 0
-%             error('don''t switch while coil has current')
-%         end
+%         tic
+%         load('ACMBlock1_1.mat','ACMBlock','hashStruct')
+%         disp('Load Block Time')
+%         toc
+%         disp(sprintf('MOTPower hash: %s', ex.MOTPower.hash))
         
-        nex.ddscompile(j,ddslines.comport)
+%         disp(sprintf('MOTPower.hashable %i', ex.MOTPower.hashable))
+%         disp(sprintf('MOTPower.pass2 %i' ,ex.MOTPower.pass2))
+        tic
+        SBList = ex.loadAllSubBlocks(); 
+        disp(sprintf('First Run: %f', toc))
+%         disp(sprintf('MOTPower hash: %s', ex.MOTPower.hash))
+%         ex.checkAgainstHashFile(hashFileName); 
+%         ex.makeHashFile(hashFileName);
+%         disp(sprintf('MOTPower hash: %s', ex.MOTPower.hash))
+        tic
+        if exist('hashStruct','var')
+            ex.checkAgainstHashStruct(hashStruct);
+            hashStruct = ex.makeHashStruct();
+        else
+            hashStruct = ex.makeHashStruct();
+            loadedFiles = ex.loadBlock(hashStruct);
+            hashStructOld = loadedFiles.hashStruct;
+            ACMBlock = loadedFiles.ACMBlock;
+            olddds = loadedFiles.ddscode;
+            ex.checkAgainstHashStruct(hashStructOld);
+        end
+        disp(sprintf('Load Block/Hashstruct: %f', toc))
+%         loadedFiles = ex.loadBlock(hashStruct);
         
+%         disp(sprintf('MOTPower hash: %s', ex.MOTPower.hash))
+%         disp(sprintf('MOTPower struct hash: %s',hashStruct.MOTPower))
+        tic
+        ex.(CameraLine).hashable = 0;
+        ex.setSecondPass()
+        ex.loadAllSubBlocks();
+        ex.checks(CameraLine)
+        disp(sprintf('Second Run: %f', toc))
+
+%         DDSLoad = strcat('DDSCode1_',oldID,'.mat');
+%         olddds = load(DDSLoad);
+        tic
+        ex.ddscompile(j,ddslines.comport,olddds.ddsInputArrays,runID)
+        disp(sprintf('DDS Compile: %f', toc))
         %% Add Block Definitions
-        tf = nex.explength*dt;
-        timeLine = TimeLine;
-        timeLine.durationTime = tf;
-        ACMBlock = Block('ACMBlock',timeLine);
+        tf = ex.explength*dt;
         
         %% Add Devices
         sampleRate = 1/dt;
-        ACMBlock = ACMBlock.addDevice('Dev1', sampleRate); %Device names must map to hardware!
-        ACMBlock = ACMBlock.addDevice('Dev2', sampleRate); %Device names must map to hardware!
-        ACMBlock = ACMBlock.addDevice('Dev3', sampleRate); %Device names must map to hardware!
-        ACMBlock.primaryDevice = 'Dev1';
+%         tic
+%         load('ACMBlock1_1.mat','ACMBlock')
+%         disp('Load Block Time')
+%         toc
+        loadBlock = 1;
+        if (ex.explength*dt ~= ACMBlock.timeLine.durationTime && tf ~=0) || ACMBlock.devices{1,2}.sampleRate ~= sampleRate
+            tic
+            loadBlock = 0;
+            disp('Making a new block')
+            timeLine = TimeLine;
+            timeLine.durationTime = tf;
+            ACMBlock = Block('ACMBlock',timeLine);
+            ACMBlock = ACMBlock.addDevice('Dev1', sampleRate); %Device names must map to hardware!
+            ACMBlock = ACMBlock.addDevice('Dev2', sampleRate); %Device names must map to hardware!
+            ACMBlock = ACMBlock.addDevice('Dev3', sampleRate); %Device names must map to hardware!
+            ACMBlock.primaryDevice = 'Dev1';
+            disp(sprintf('Make New Block Time: %f', toc))
+        end
+%         format long
+        
         
         warning off all
         tic
-        ACMBlock = nex.fillblock(ACMBlock,ddslines);
-        toc
+        ACMBlock = ex.fillblockHashed(ACMBlock,ddslines,loadBlock);
+        disp(sprintf('Fill Block: %f', toc))
+        %% Reset Hashable Value for next TOF
+
+        ex.resetHashable();
+
         % ---------Checking for over currents on microwires----------
-        if nex.checkValueCondition('CentralMicroVoltage',abs(2.5/CentralMicroCal),'greaterAbs',0)
-            error('CentralMicroVoltage is greater than or equal to 2.5amps!')
+        if ex.checkValueCondition('CentralMicroVoltage',abs(2.9/CentralMicroCal),'greaterAbs',0)
+            error('CentralMicroVoltage is greater than or equal to 2.9amps!')
         end
-        if nex.checkValueCondition('ArmsMicroVoltage',abs(1/ArmsMicroCal),'greaterAbs',0)
+        if ex.checkValueCondition('ArmsMicroVoltage',abs(1/ArmsMicroCal),'greaterAbs',0)
             error('ArmsMicroVoltage is greater than or equal to 1amps!')
         end
-        if nex.checkValueCondition('DimpleMicroVoltage',abs(2/DimpleMicroCal),'greater',0)
+        if ex.checkValueCondition('DimpleMicroVoltage',abs(2/DimpleMicroCal),'greater',0)
             error('DimpleMicroVoltage is greater than or equal to 2amps!')
         end
  
-        if nex.checkValueCondition('CentralMicroVoltage',abs(0.001/CentralMicroCal),'greaterAbs',12)
+        if ex.checkValueCondition('CentralMicroVoltage',abs(0.001/CentralMicroCal),'greaterAbs',12)
             error('CentralMicroVoltage is on for more than 8 seconds!')
         end
-        if nex.checkValueCondition('ArmsMicroVoltage',abs(0.001/ArmsMicroCal),'greaterAbs',12)
+        if ex.checkValueCondition('ArmsMicroVoltage',abs(0.001/ArmsMicroCal),'greaterAbs',12)
             error('ArmsMicroVoltage is on for more than 8 seconds!')
         end
-        if nex.checkValueCondition('DimpleMicroVoltage',abs(0.001/DimpleMicroCal),'greater',8)
+        if ex.checkValueCondition('DimpleMicroVoltage',abs(0.001/DimpleMicroCal),'greater',8)
             error('DimpleMicroVoltage is on for more than 8 seconds!')
         end
         %--------------------------------------------------------
-     
         CurrTOF = TOFs(tof)*1000;
-        save(['ACMBlock' num2str(j) '_' num2str(tof)],'ACMBlock','ContParName','CurrContPar','CurrTOF','NumOfTOF','SBList','AllFiles','-v7.3');
-        clear ACMBlock;
+        tic
+        save(['ACMBlock' num2str(j) '_' num2str(tof) '_' runID],'ACMBlock','ContParName','CurrContPar','CurrTOF','NumOfTOF','SBList','AllFiles','-v7.3','hashStruct');
+        disp(sprintf('Save Time: %f', toc))
+        %         clear ACMBlock;
     end
+%     clear ACMBlock;
     %% Make run files
-    runfiles(ContParName,CurrContPar,j,numTOFs,['DDSCode' num2str(j)])
+    runfiles(ContParName,CurrContPar,j,numTOFs,['DDSCode' num2str(j) '_' runID],runID)
     disp(['Done.'])
     disp(' ')
+    toc
 end
+deleteString = strcat('*',oldID,'.mat');
+delete(deleteString)
 display(sprintf('Definition Elapsed Time: %.1f s',toc(ticST)))
 % 
 

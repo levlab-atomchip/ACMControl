@@ -1,12 +1,17 @@
-% TOFs = [3 5 7 9 11 13 15 17]*1e-3;
-% TOFs = 1e-3*linspace(5,15,10);
-TOFs =[5]*1e-3;
-% TOFs = [1 2 3 4 5 6 7]*1e-3;
+ms = 1e-3;
+us = 1e-6;
+
+MHz=1e6;
+
+% TOFs = [3 5 7 9 11 13 15 17]*1*ms;
+% TOFs = 1*ms*linspace(5,15,10);
+TOFs =[2]*ms;
+% TOFs =[5 7 9]*ms;
 numTOFs = length(TOFs);
 NumOfTOF = length(TOFs);
 
-dt = 100e-6; %sec, .1ms time step
-% dt = 10e-6;
+% dt = 100*us; %sec, .1ms time step
+dt = 100e-6;
 M = 53; %Number of columns in the sequence
 SAMPLE_RATE = 1/dt; %Hz, 10 kHz sample rate
 
@@ -19,7 +24,7 @@ DIPOLE =1;
 OPTEVAP =0;
 MOVEDIPOLE =1; % imaging line 2 = round trip
 MACROCAPTURE =1;
-MACROCOMPRESS = 0;
+MACROCOMPRESS =0;
 MICROCAPTURE =0;
 
 SIGPLUS = 1;
@@ -30,6 +35,11 @@ ODTIMAGE = 0;
 DIGILOCK = 0; %Use TTL to control Beat Note Lock
 
 %% Current Calibrations
+
+ProdXCal = -0.479; %Vset / A
+ProdYCal = -0.479; %Vset / A
+ProdZCal = -1.0/6.0; %Vset / A
+
 MacroBiasCal = 5.6; %A/Vset
 MacroCentralCal = -38.59; %A/Vset %Stanford
 MacroAxialCal = -10; %A/Vset
@@ -44,57 +54,77 @@ ArmsMicroCal = 0.4; %A/Vset
 DimpleMicroCal = 0.4;
 
 %% For Imaging
-IMAGING = 4; %Imaging line switch; 2 is along x axis in octagon, 3 odt axis, 4 is horizontal in Magellan
+IMAGING =4; %Imaging line switch; 2 is along x axis in octagon, 3 odt axis, 4 is horizontal in Magellan
 switch IMAGING
     case 4
         disp('Imaging in Magellan')
-%         ImageFreq = 64.92e6; %best
+%         ImageFreq = 64.91e6; %
 %         ImageFreq = linspace(64.88e6,64.98e6,10);
 %           ImageFreq = [64.88e6,64.90e6,64.92e6];
-         ImageFreq = 64.88e6; %res
-%         ImageFreq = 64.92e6; %res
-%         ImagingVVA =3.5;
-         ImagingVVA =2.23;
-%         XBias = 0;
-%         YBias = 0;
-%         ZBias = 0;
-% 
-        XBias = 0;
-        YBias = .7143;
-        ZBias = 0;
-        
-        MacroImgBias = 0 / MacroBiasCal;
-        
-%         magOnTime = .3e-3; %best
-        magOnTime = 1e-3; %test
+%          ImageFreq = 64.92e6; %test
+        ImageFreq = 64.89e6; %best
+%         ImagingVVA =2;
+         ImagingVVA =1.6;
+
+        if MACROCOMPRESS
+            XBias = 0;
+            YBias = 0;
+            ZBias = 0;
+            MacroImgBias = 2/ MacroBiasCal;
+        else
+            XBias = 0;
+            YBias = .7143;
+            ZBias = 0;
+            MacroImgBias = 0 / MacroBiasCal;
+
+        end
+%         magOnTime = .3*ms; %best
+        magOnTime = .3*ms; %test
         
         CameraLine = 'MagellanCameraTrigger';
     case 2
         disp('Imaging in Octagon')
 %         ImageFreq= 64.95e6; % 5 MHz detuned? Yes
-        ImageFreq= 64.90e6; %best
+        ImageDetuning =0*MHz;
+        ImageFreq= 64.90e6 + .01*ImageDetuning; %best
 %         ImageFreq = linspace(64.86e6,64.96e6,10);
 %             ImageFreq= 64.94e6; %test
-%         ImagingVVA = 1.9; 
-        ImagingVVA = 2.2;
+%         ImagingVVA =2; 
+        ImagingVVA = 6;
 %         XBias =-.4;
 %         YBias =0;
 %         ZBias = 0;
-        XBias =-.4;
+%         XBias =0;
+%         XBias = [-0.7 -0.6 -0.5 -0.4, -0.3, -0.2];
+
+          %normal as of 11/17/13
+        XBias = -0.4;
         YBias =0;
-        ZBias = 0;        
+        ZBias = 0;  
+
+%         XBias = 2.5 * ProdXCal; %A
+%         YBias = 2.0 * ProdYCal; %A
+%         ZBias = 0 * ProdZCal; %A
+        
+        % Zero Fields
+%         XBias = 0;
+%         YBias = 0;
+%         ZBias = 0;
+        
         MacroImgBias = 0 / MacroBiasCal;
+        magOnTime = 1*ms; %test
         
         CameraLine = 'CameraTrigger';
     case 3
         disp('ODT Imaging')
         ImageFreq = 64.94e6;
-        ImagingVVA = 2.4;
+%         ImageFreq = 64.9e6;
+        ImagingVVA = 7;
         XBias = 1; %-.21
         YBias = 0; %-.21
         ZBias = 0; %-.8
         
-        magOnTime = .3e-3; %best
+        magOnTime = .3*ms; %best
         MacroImgBias = 0 / MacroBiasCal;
         
         CameraLine = 'MagellanCameraTrigger';
@@ -104,102 +134,123 @@ if isempty(ImageFreq)
     disp('You forgot to set your ImageFreq');
 end
 
-cameraPulse = .5e-3;
+cameraPulse = .5*ms;
 
-ImageSweepTime = 2e-3; %sec, time to sweep
-% ImageSweepTime = .2e-3; %sec, time to sweep
-ImOnTime = 5e-3; %sec, lead time for opening imaging shutter
-CamShutterTime = 1e-3; %sec, Shutter time set in camera configuration
-% ExposeTime = 10e-3; %Time to leave Img AOM on test
-ExposeTime = .2e-3; %Time to leave Img AOM on
-DummyTime = 195e-3;%sec, cleaning image time before end of MOT load
+ImageSweepTime = 2*ms; %sec, time to sweep
+% ImageSweepTime = .2*ms; %sec, time to sweep
+ImOnTime = 5*ms; %sec, lead time for opening imaging shutter
+CamShutterTime = 1*ms; %sec, Shutter time set in camera configuration
+% ExposeTime = 10*ms; %Time to leave Img AOM on test
+ExposeTime = .2*ms; %Time to leave Img AOM on
+DummyTime = 195*ms;%sec, cleaning image time before end of MOT load
 % WaitTime = .5; %sec (Frame Rate of camera suggests this could be as low as 140 ms) %Best
 WaitTime = .2; %sec (Frame Rate of camera suggests this could be as low as 140 ms) %Test
-REPUMPTIME = .1e-3; %Best
-% REPUMPTIME = 1e-3;
+% REPUMPTIME = .1*ms; %Best
+REPUMPTIME = .3*ms;
 ImgRepumpVVA =10; %best
 % ImgRepumpVVA =0; %best
 
-ImagingTime = 2*WaitTime + 100e-3;
+ImagingTime = 2*WaitTime + 100*ms;
 %% For LoadMOT
 % QuadSet = -.2; %best
-QuadSet = -.15; %test (normal as of 8/22/13)
+QuadSet = -.2; %test
 % QuadSet = linspace(-0.2,-0.1,5);
 % test (normal as of 8/22/13)
+% XLoad = linspace(0,10,11);
+
+%normal as of 11/17/13; voltage, not current
 XLoad = 0;
-YLoad = 0;
-ZLoad =-.3;
+YLoad =0;
+ZLoad =-0.3;
+
+% XLoad = 0 * ProdXCal; %A
+% YLoad = [0,1,2,3] * ProdYCal; %A
+% ZLoad = 0 * ProdZCal; %A
+
+% Zero Fields
+% XLoad = 0;
+% YLoad = 0;
+% ZLoad = 0;
+
+% BiasCurrent = [0,0.3, 0.6, 0.9, 1.2];
+% BiasCurrent = 0.0;
+
+% ZLoad = 0 * ProdZCal;
+
 % best
-% XLoad = -.2;
-% YLoad = -.3;
-% ZLoad = -.2;
+% XLoad = 0;
+% YLoad = -.5;
+% ZLoad = -.3;
 
-LoadTime = 3; %sec
+UniblitzTime = 0; %sec, extra time at start to open uniblitz
+% LoadTime =3; %sec
 % LoadTime = linspace(1,7,7);
-% LoadTime = 7; %sec
-% MOTFreq = 64.35e6; %best
-MOTFreq = 64.35e6; %test
+LoadTime = 7; %sec
+MOTFreq = 64.35e6; %best
+% MOTFreq = 64.33e6; %test
 % MOTFreq = linspace(64.30e6,64.40e6,11);
-MOTRVVALoadMOT = 10;
+% MOTRVVALoadMOT = 10;
 % MOTRVVALoadMOT = linspace(0,5,6);
-% MOTRVVALoadMOT = 6;
+MOTRVVALoadMOT = 10;
 
-MOTQuadOffDelay = 1e-3; %time for the MOT coils to shut off.
+MOTQuadOffDelay = 1*ms; %time for the MOT coils to shut off.
+
+MOTTime = UniblitzTime + LoadTime;
 
 %% For SubDoppler Cooling
-% CoolTime =19e-3; % Best
-% SubDopSweepTime = 19e-3; %Best
-CoolTime =19e-3; % test
+% CoolTime =19*ms; % Best
+% SubDopSweepTime = 19*ms; %Best
+CoolTime =19*ms; % test
 SubDopSweepTime = CoolTime; %test
-% MOTRVVASub = 2.62; %Best
-MOTRVVASub = 6; %Best2
-% MOTRVVASub = 3; %test
+% MOTRVVASub = 6; %Best2
+MOTRVVASub = 2; %test
 % SubDopFreq = 65.8e6;
 % MC laser for subdopler cooling (LIN)
-% SubDopFreq = 65.31e6; % Best
-SubDopFreq = 65.5e6; % test
+SubDopFreq = 65.5e6; % Best
+% SubDopFreq = 65.8e6; % test
 
 % %Best
 % ZeroXBias =0
-% ZeroYBias =-.2;
-% ZeroZBias =-.1;
+% ZeroYBias =-.1;
+% ZeroZBias =0;
 
 %Test
-ZeroXBias =-0;
-ZeroYBias =-.1;
+ZeroXBias =0;
+ZeroYBias =-0.1;
 ZeroZBias =0;
 
 %% Optical Pumping
-% pumpFreq = 65.4e6; %Test
-pumpFreq = 65.90e6; %Best
+pumpFreq = 65.93e6; %Test
+% pumpFreq = 65.90e6; %Best
 % pumpFreq = linspace(65.8e6,66e6,21);
 % pumpFreq = 65.35e6; %Works
 % pumpFreq = 66.45e6; %Works
-% PumpSweepTime = 1e-3; %Test
-PumpSweepTime = .1e-3; %Best
-MINUSREPUMPTIME = 1e-3; 
-% pumpVVA =1.75; %Best
-pumpVVA= 1.75; %test
+% PumpSweepTime = 1*ms; %Test
+PumpSweepTime = .1*ms; %Best
+MINUSREPUMPTIME = 1*ms; 
+% pumpVVA =3; %Best
+pumpVVA=2.15; %test
 
-MOTRVVApump = 10; %Best
+% MOTRVVApump = 10; %Best
 
 % pumpVVA = 0;
-% MOTRVVApump = 0;
+MOTRVVApump = 3;
 QuadPump = 0;
 
 if SIGPLUS
-%     pumpTime = 3e-3; 
-    pumpTime = 3e-3; %  Test
-%     XPump = -2;
-%     YPump = -1;
-%     ZPump = -2;
-%Best
+%     pumpTime = 2*ms; 
+    pumpTime = 1.5*ms; 
+%     pumpTime = 3*ms; %  Best
     XPump = 0;
-    YPump =0;
+    YPump = -.3;
     ZPump = -2;
+%Best
+%     XPump = 0;
+%     YPump =-.3;
+%     ZPump = -2;
 end
 if SIGMINUS
-    pumpTime = 3e-3;
+    pumpTime = 3*ms;
 %     XPump = 0;
 %     YPump = 0;
 %     ZPump = 0;
@@ -217,16 +268,18 @@ ODT_Servo_b = -2.06; %W , y-intercept
 ODT_Servo_max = 7.25; %W, linearity is poor past this power.
 
 %% For Reloading
-ReLoadTime = 200e-3;
+ReLoadTime = 200*ms;
 ReLoadMag = -.45;
 
 %% Hybrid trap transfer
-% HybridSweepTime =.3; %seconds, tEST
-HybridSweepTime =2; %seconds, Best
-HybridTrapHoldTime =0;
+HybridSweepTime =.3; %seconds, tEST
+% HybridSweepTime =.1; %seconds, tEST
+% HybridSweepTime =2; %seconds, Best
+% HybridTrapHoldTime =[2,4,6,8,10,14,18,22];
+HybridTrapHoldTime = 1*ms;
 StartODTPwr = 0;
-% MaxODTPwr = 10; %best
-MaxODTPwr = 10; %test
+MaxODTPwr = 10; %best
+% MaxODTPwr = 5; %test
 
 if SIGMINUS
     PURIFYGRAD = -.4; %Best
@@ -246,12 +299,12 @@ if SIGMINUS
     ZHybridMax = -3;
 end
 if SIGPLUS
-%     PURIFYGRAD = -.2; %Best
-    PURIFYGRAD = -.2;
+    PURIFYGRAD = -.2; %Best
+%     PURIFYGRAD = -.105;
     PURIFYOFFSET = 6e-3; %Best for PURIFYGRAD = -.2
     PURIFYERFTIME = .015; %Best for PURIFYGRAD = -.2;
     PURIFYTIME = .5; %Best
-
+%     PURIFYTIME = 2; %Test
     
     
     %%TEST
@@ -263,32 +316,34 @@ if SIGPLUS
     
     HybridStartBGrad = PURIFYGRAD;
     HybridMaxBGrad = -1.8;  %best
-%     HybridMaxBGrad = -.9;  %test
+%     HybridMaxBGrad = -0.2;
+%     HybridMaxBGrad = PURIFYGRAD - .01;  %test
     
 % % %Best
 %     XHybrid = 0;
 %     YHybrid = -0.5;
 %     ZHybrid = -.2;
 
-%     XHybrid =0;
-%     YHybrid = 0;
-%     ZHybrid = -.7;
 
-    XHybrid =0;
-    YHybrid =0;
-    ZHybrid = -1.4;
+% % % 12/22/13
+%     XHybrid =-1.75;
+%     YHybrid =-1.2;
+%     ZHybrid = -.8;
+
+    XHybrid =-1.75;
+    YHybrid =-1.2;
+    ZHybrid = -.8;
 
        %%Best
-    XHybridMax = 0;
-    YHybridMax = -.2;
-    ZHybridMax = -3;
-    
-       %%Test
-%     XHybridMax = 0;
+%     XHybridMax = -1;
 %     YHybridMax = -.2;
-%     ZHybridMax = -1.5;
-
-% ZHybridMax = 0;
+%     ZHybridMax = -3;
+%     
+       %%Test
+    XHybridMax =-1;
+    YHybridMax = -.5;
+    ZHybridMax = -3;
+ 
 %     XHybridMax = XHybrid;
 %     YHybridMax = YHybrid;
 %     ZHybridMax = ZHybrid;
@@ -297,9 +352,11 @@ end                                                                             
 HybridTime = PURIFYERFTIME-PURIFYOFFSET+HybridSweepTime+ PURIFYTIME + HybridTrapHoldTime;
 %% Hybrid RF Evaporation
 HybridHoldTime =0; 
-
-% RFVVASet = 6;
-RFVVASet = 2.5;
+HybridRampEndB = 0;
+% HybridEvapRampTime = 20e-3;
+ZRampEndB = 0;
+% RFVVASet =0;
+RFVVASet =3.5;
 RF_PWR = -8; %test;
 % RF_PWR = -40; % shutoff RF
 % disp('RF OFF in Parameters')
@@ -309,17 +366,17 @@ YRFEvap = YHybridMax;
 ZRFEvap = ZHybridMax;
 
 if SIGPLUS
-%     Evap1HighFreq =30e6; %Hz, best
-%     Evap1LowFreq = 8e6; %Hz, best
-%     RampRate = 3e6; %Hz^2 best
-    Evap1HighFreq =30e6; %Hz, test
-    Evap1LowFreq =6e6; %Hz, test
-    RampRate = 3e6; %Hz^2 test
-%     RampRate = 3e6; %Hz^2 best
+%     Evap1HighFreq =35*MHz; %Hz, best
+%     Evap1LowFreq =8*MHz; %Hz, best
+%     RampRate = 5e6; %Hz^2 best
+    Evap1HighFreq =35e6; %Hz, test
+    Evap1LowFreq = 8e6; %Hz, test
+    RampRate =5e6; %Hz^2 test
+
     Evap1SweepTime = (Evap1HighFreq-Evap1LowFreq)/RampRate;
     
     TwoSlopeEvap =0;
-    Evap3HighFreq = Evap1LowFreq;
+    Evap3HighFreq = Evap1LowFreq+.001*MHz;
     Evap3LowFreq = 3.75e6;
     RampRate3 = 1e6;
     Evap3SweepTime = (Evap3HighFreq-Evap3LowFreq)/RampRate3;
@@ -366,7 +423,7 @@ DipoleStartBGrad = HybridMaxBGrad;
 if SIGMINUS
     DipoleEndBGrad = -.2; %Best
     DipoleBSweepTime = 2; %Best
-    DipoleLoadHoldTime =0e-3;
+    DipoleLoadHoldTime =0*ms;
     DipoleBOffSweep = 100e-3;
     Evap2SweepTime = DipoleBSweepTime; %seconds, test
     
@@ -399,15 +456,23 @@ if SIGMINUS
     DipoleBiasSweep = 1;
 end
 
+% ODTHoldTime = [1*ms, 0];
+% DipoleLoadHoldTime = 1*ms;
+
 if SIGPLUS
-%     DipoleEndBGrad = -.05; %Best
-    DipoleEndBGrad = -.05; %Test
-    DipoleBSweepTime = 2; %Test
+    DipoleEndBGrad = -.05; %Best
+%     DipoleEndBGrad = -.12; %Test
+    DipoleBSweepTime = 2; %Best
+%     DipoleBSweepTime = 2*.01; %Test
     Evap2SweepTime = DipoleBSweepTime-dt; %seconds
-    DipoleLoadHoldTime =1e-3;
-    DipoleBOffSweep = 100e-3;
-%     DipoleParaFreq =linspace(1.8e3,2.3e3,11);
-%     DipoleParaAmp = 1;
+    DipoleLoadHoldTime =2001*ms; % why is this the default?
+%     DipoleLoadHoldTime = [1*ms, 5, 10, 15, 20, 25, 30, 35, 40];
+    
+    DipoleBOffSweep = 100e-3; %Best
+%     DipoleBOffSweep = 1e-3; %Test
+%     DipoleParaFreq =linspace(2500,3500,20);
+    DipoleParaFreq =800;
+    DipoleParaAmp = 0;
     
     ByRates = 0;
     
@@ -420,8 +485,8 @@ if SIGPLUS
     else
         Evap2HighFreq = Evap1LowFreq; %Hz
 %         Evap2LowFreq =Evap1LowFreq-4e6; %test
-        Evap2LowFreq =Evap1LowFreq-1.75e6; %test
-%         Evap2LowFreq =Evap1LowFreq-3e6; %Hz %best
+%         Evap2LowFreq =Evap1LowFreq-.1e6; %test
+        Evap2LowFreq =Evap1LowFreq-1.75e6; %Hz %best
     end
     
     if ByRates
@@ -429,12 +494,13 @@ if SIGPLUS
         YDipole = 0; 
         ZDipole = -.8;
     else
-%         XDipole = 0; 
-%         YDipole = 0; 
-%         ZDipole = -.4;
         XDipole = 0; 
         YDipole = 0; 
-        ZDipole = -.575;
+        ZDipole = -.4;
+
+%         XDipole = XRFEvap; 
+%         YDipole = YRFEvap; 
+%         ZDipole = -.575; %Overrrrrr riddern
     end
     XSweepRate = 5;
     YSweepRate = 5;
@@ -444,10 +510,11 @@ if SIGPLUS
     DipoleBiasSweepTimes = [0 .2625 .4375 .6125 .7875 1.05 1.1375 1.3125 1.4875 2];
     DipoleBiasSweepValues = -1*[3 2.3 2.1 1.8 1.5 1.2 .95 .675 .575 .575]; %Best
 
-	%%Test for HybridGrad = -.9 ZHybridMax = -1.5
-%     DipoleBiasSweepTimes = [0 .2625 .4375 .6125 .7875 1.05 1.1375 1.5 2];
-%     DipoleBiasSweepValues = -1*[2 1.35 1.25 1.15 1.05 .91 .87 .69 .575];
-    
+	%Test for HybridGrad = -1.8 ZHybridMax = -2.32
+%     DipoleBiasSweepTimes = [0 .25 .5 .75 1 1.25 1.5 1.75 2];
+%     DipoleBiasSweepValues = -1*[2.32 2.1 1.7 1.45 1.2 .975 .74 .51 .375];
+%     ZDipoleTest = -.4;
+%     DipoleBiasSweepValues = ZDipoleTest
     DipoleBiasSweep =1;  %UIUC Set
 end
 
@@ -484,23 +551,32 @@ ZOptEvap =ZDipole;
 
 QuadSweepAlpha = 1;
 
-% OptEvapSweepTime =2; %Best
-OptEvapSweepTime =4; %Test
+OptEvapSweepTime =4; %Best
+% OptEvapSweepTime =5; %Test
 
 OptEvapStartBGrad = DipoleEndBGrad; % test
-OptEvapEndBGrad = -.06; %0.3 Tesla/m, Best
-% OptEvapEndBGrad = -.0972; %Test
+% OptEvapEndBGrad = -.06; %0.3 Tesla/m, Best
+OptEvapEndBGrad = -.1; %Test
 OptEvapStartPwr = MaxODTPwr; %Lin value
-% OptEvapEndPwr = 1.8; %vary to control condensate fraction
-OptEvapEndPwr = 2.5;
+% OptEvapEndPwr = 2.3; %vary to control condensate fraction
+OptEvapEndPwr = 3.0;
 
+% HoldBGrad = -.1;
 HoldBGrad = 0;
-MagHoldTime = .1e-3;
-MagSweepTime = .1;
+XOptEvapHold = 0;
+YOptEvapHold = 0;
+ZOptEvapHold = 0;
+% XOptEvapHold =XOptEvap;
+% YOptEvapHold =YOptEvap;
+% ZOptEvapHold =ZOptEvap;
+
+% MagHoldTime = .1*ms;
+MagHoldTime = 1*ms;
+MagSweepTime = 100*ms;
 
 RECOMPRESSODT = 1;
-RecompressTime = .1;
-RecompressValue =10;
+RecompressTime = 1;
+RecompressValue =5;
 
 OptEvapSweepTimeTrunc = 4;
 a2 = -(OptEvapEndPwr - OptEvapStartPwr)/(OptEvapSweepTimeTrunc^2);
@@ -509,7 +585,12 @@ a0 = OptEvapStartPwr;
 
 OptEvapODTVVAEnd = OptEvapSweepTime*a1 + OptEvapSweepTime^2*a2 + a0;
 
-OptEvapTime = OptEvapSweepTime + RecompressTime + MagHoldTime + MagSweepTime;
+if RECOMPRESSODT
+    OptEvapTime = OptEvapSweepTime + RecompressTime + MagHoldTime + MagSweepTime;
+else
+    OptEvapTime = OptEvapSweepTime + MagHoldTime + MagSweepTime;
+end
+
 %% Move Dipole
 % MacroBiasCal = 5.6; %A/Vset
 % MacroCentralCal = -38.59; %A/Vset %Stanford
@@ -531,13 +612,26 @@ OptEvapTime = OptEvapSweepTime + RecompressTime + MagHoldTime + MagSweepTime;
 % acc = [150,75];
 
 % Best 2013-8-11
-pos = [128,463];
+% pos = [128,464];
+% spd = [200, 200];
+% acc = [150,75];
+
+%%Best 2013-11-20
+% pos = [133,466];
+% spd = [200, 200];
+% acc = [150,75];
+
+pos = [134,466];
 spd = [200, 200];
 acc = [150,75];
 
-% pos = [128,275,350,463];
-% spd = [200,200,30,200];
-% acc = [25,25,25,25];
+
+% pos = [145,477];
+% spd = [200, 200];
+% acc = [150,75];
+% pos = [145,486];
+% spd = [200, 200];
+% acc = [150,75];
 
 MotionProfile = [pos;spd;acc];
 speed1 = MotionProfile(2,2);
@@ -549,14 +643,22 @@ acc2 = MotionProfile(3,1);
 MagXMoveDipole =0 / MagXCal;
 CompCoilMoveDipole =0/CompCoilCal;
 
-% MoveHoldTime =0; %test
-MoveHoldTime =0; %best
+% MoveHoldTime =8; %test
+MoveHoldTime =1; %best
+
+MoveParaTime = 0;
+ODTParaAmp = 0;
+ODTParaFreq = 1050;
+% ODTParaFreq = linspace(1400,2400,20);
+% MoveHoldTime=linspace(0,300e-3,10);
 TransitTime = (distance-(speed1^2/acc1))/speed1 + 2*speed1/acc1;
 
 if IMAGING ~= 2
     MoveDipoleTime = MoveHoldTime + (distance-(speed1^2/acc1))/speed1 + 2*speed1/acc1;
 else
     MoveDipoleTime = MoveHoldTime + (distance-(speed1^2/acc1))/speed1 + 2*speed1/acc1 + (distance-(speed2^2/acc2))/speed2 + 2*speed2/acc2;
+%     MoveDipoleTime = MoveParaTime + MoveHoldTime + (distance-(speed1^2/acc1))/speed1 + 2*speed1/acc1 + (distance-(speed2^2/acc2))/speed2 + 2*speed2/acc2;
+
 end
 
 FinalMoveODT = 7;
@@ -565,32 +667,34 @@ MoveSweep = [FinalMoveODT, MoveSweepTime];
 
 %% Macro Wire Capture
 
-% MacroRampTime = 35e-3; %sec %best prior 12/1/11
-% ODTWaitTime = 0.1e-3; % Time after the start oframping macro wires that ODT starts ramping Best
+% MacroRampTime = 35*ms; %sec %best prior 12/1/11
+% ODTWaitTime = 0.1*ms; % Time after the start oframping macro wires that ODT starts ramping Best
 
-% CompressUpRampTime=200e-3;
-% CompressDownRampTime=10e-3;
-% AxialMacRampTime=10e-3;
+% CompressUpRampTime=200*ms;
+% CompressDownRampTime=10*ms;
+% AxialMacRampTime=10*ms;
 % ODTMacroTime=0;
 % ODTWaitTime=CompressUpRampTime+max([CompressDownRampTime AxialMacRampTime])+ODTMacroTime;
 
-MacroRampTime = 35e-3; %test
-% MacroRampTime =500e-3; %best
+MacroRampTime = 100*ms; %test
+% MacroRampTime = 35*ms; %test
+% MacroRampTime =500*ms; %best
 ODTWaitTime = MacroRampTime;
 
 
-% ODTWaitTime = 35e-3; % Time after the start oframping macro wires that ODT starts ramping Test
-ODTRampTime = 40e-3; %ODT ramp time is now independent from macrowire  best
-% ODTRampTime = 1e-3; %ODT ramp time is now independent from macrowire test
+% ODTWaitTime = 35*ms; % Time after the start oframping macro wires that ODT starts ramping Test
+ODTRampTime = 40*ms; %ODT ramp time is now independent from macrowire  best
+% ODTRampTime = 1*ms; %ODT ramp time is now independent from macrowire test
 
 
 
 ODTEndVoltage = 0; %Best
-MacCapHoldTime =300e-3; %sec 
-MacCapODTDropTime = 0e-3; %se
+MacCapHoldTime =1*ms; %sec 
+MacCapODTDropTime = 0*ms; %se
 
-% MacroParaAmp = .3 / MacroCentralCal;
-% MacroParaFreq = 30;
+% MacroParaAmp = 0.2 / MacroCentralCal;
+MacroParaFreq = 10;
+% MacroParaFreq = linspace(5,60,25);
 
 MacroCaptureTime = max(MacroRampTime,(ODTRampTime + ODTWaitTime)) +MacCapHoldTime;
 
@@ -638,11 +742,15 @@ MacroCaptureTime = max(MacroRampTime,(ODTRampTime + ODTWaitTime)) +MacCapHoldTim
 
 % Test
 BiasMacCap = 4 / MacroBiasCal; %Amperes
-% CentralMacCap = 20.5 / MacroCentralCal; %For CentralMicroCap = -2
-CentralMacCap =23.2 / MacroCentralCal; %For CentralMicroCap = 0 2
-% CentralMacCap =23 / MacroCentralCal; %For CentralMicroCap = 0 4
-AxialMacCap = 2 / MacroAxialCal; %Best
+% BiasMacCap =0 / MacroBiasCal; %Amperes
+CentralMacCap = 26.35/ MacroCentralCal; %For CentralMicroCap = -2
+% CentralMacCap =25.3 / MacroCentralCal; %For CentralMicroCap = 0 AxialMacCap = 2
+% CentralMacCap =20.8 / MacroCentralCal; %For CentralMicroCap = 0 AxialMacCap = 4
+% AxialMacCap = 2 / MacroAxialCal; %Best
+AxialMacCap = 4 / MacroAxialCal;
+
 XMacCap =0 / MagXCal; %Best
+% XMacCap =5 / MagXCal; %Test
 YMacCap = 42/ MagYCal; %No Bias Wire
 ZMacCap = 0 / MagZCal;
 DimpleMacroCap = 0/MacroDimpleCal;
@@ -680,23 +788,45 @@ ArmsMacComp = 0;
 % CompressMacroComp = 0;
 
 
-% Best w/o microwires
-% BiasMacComp = 0/ MacroBiasCal; %Amperes
-BiasMacComp = 40/ MacroBiasCal; %Amperes
-CentralMacComp = 31 / MacroCentralCal;
-% CentralMacComp = 45 / MacroCentralCal;
-% AxialMacComp = 0 / MacroAxialCal;
-% AxialMacComp = 35 / MacroAxialCal;
-AxialMacComp =12 / MacroAxialCal;
-XMacComp = 3 / MagXCal; %Best
-% XMacComp = 0 / MagXCal; %Test
-% YMacComp = 35 / MagYCal; %Best
-YMacComp = YBias; %Test
+% % Best w/o microwires
+% BiasMacComp = 40/ MacroBiasCal; %Amperes
+% CentralMacComp = 31 / MacroCentralCal;
+% AxialMacComp =12 / MacroAxialCal;
+% XMacComp = 3 / MagXCal; %Best
+% YMacComp = YBias; %Test
+% ZMacComp = 0 / MagZCal;
+% 
+% DimpleMacroComp =0/MacroDimpleCal;
+% CompressMacroComp = 0;
+
+% Best 10/22/2013
+% BiasMacComp = 21/ MacroBiasCal; %Amperes
+% CentralMacComp = 14 / MacroCentralCal;
+% AxialMacComp =8 / MacroAxialCal;
+% % AxialMacComp =20 / MacroAxialCal;
+% % XMacComp = 4.9 / MagXCal; %Best
+% XMacComp = 0/ MagXCal; %Test
+% YMacComp = 0; %Test
+% ZMacComp = 0 / MagZCal;
+% 
+% DimpleMacroComp =0/MacroDimpleCal;
+% CompressMacroComp = 0;
+
+% Test
+% BiasMacComp = 23/ MacroBiasCal; %Amperes %Best
+BiasMacComp = 27/ MacroBiasCal; %Amperes
+CentralMacComp = 14 / MacroCentralCal; %best
+% CentralMacComp = 9.5 / MacroCentralCal; %Test
+AxialMacComp =8 / MacroAxialCal;
+% AxialMacComp =16 / MacroAxialCal;
+XMacComp =2.2 / MagXCal; %Best
+% XMacComp =0 / MagXCal; %Best
+YMacComp = 0; %Best
+% YMacComp = 42/MagYCal; %Test
 ZMacComp = 0 / MagZCal;
 
 DimpleMacroComp =0/MacroDimpleCal;
 CompressMacroComp = 0;
-
 
 %Best w/ microwires
 % BiasMacComp =0 / MacroBiasCal; %Amperes
@@ -731,21 +861,21 @@ CompressMacroComp = 0;
 % ZMacComp = 0;
 
 
-% MacroCompRampTimeTemp = 600e-3;
-MacroCompRampTime = 200e-3; %Test
-% MacroCompRampTime = 1000e-3; %Best
-DimpleRampTime = 1e-3;
+% MacroCompRampTimeTemp = 400*ms;
+MacroCompRampTime = 800*ms; %Test
+% MacroCompRampTime = 800*ms; %Best
+DimpleRampTime = 1*ms;
 % MacroCompRampTime = MacroCompRampTimeTemp;
-MacCompHoldTime =1e-3;
+MacCompHoldTime =1*ms;
 
-MacroCompRFHigh = 10e6;
-MacroCompRFLow = 1.6e6;
+MacroCompRFHigh = 15e6;
+MacroCompRFLow = 2.8e6;
 MacroCompRFSweepTime = MacCompHoldTime-dt;
-MacroCompRFVVA =0 ;
+MacroCompRFVVA =0;
 
 MacroCompRFVVAMax = 0;
 MacroCompRFVVAMin = 0;
-
+% 
 % BiasMacComp  = BiasMacCap + (BiasMacComp-BiasMacCap) * (MacroCompRampTimeTemp/MacroCompRampTime);
 % CentralMacComp  = CentralMacCap + (CentralMacComp-CentralMacCap) * (MacroCompRampTimeTemp/MacroCompRampTime);
 % AxialMacComp  = AxialMacCap + (AxialMacComp-AxialMacCap) * (MacroCompRampTimeTemp/MacroCompRampTime);
@@ -754,8 +884,9 @@ MacroCompRFVVAMin = 0;
 % ZMacComp  = ZMacCap + (ZMacComp-ZMacCap) * (MacroCompRampTimeTemp/MacroCompRampTime);
 % MacroCompRampTime = MacroCompRampTimeTemp;
 
-MacroCompParaAmp = 0 / MacroCentralCal;
-MacroCompParaFreq = 500;
+% MacroCompParaAmp = 0.8/ MacroCentralCal; %Amperes
+% MacroCompParaFreq = 190;
+% MacroCompParaFreq = linspace(150,230,8);
 
 MacroCompressTime = MacroCompRampTime + MacCompHoldTime;
 
@@ -765,7 +896,7 @@ MacroCompressTime = MacroCompRampTime + MacCompHoldTime;
 % MACRORFPWR = -13;
 % % MacroEvapLowFreq = 1.45e6;
 % % MacroEvapHighFreq = 3e6;
-% % MacroEvapSweepTime = 1000e-3;
+% % MacroEvapSweepTime = 1000*ms;
 % % MacroEvapLowFreq = 1.3702e6;
 % MacroEvapLowFreq = 4.59e6;
 % MacroEvapHighFreq =6e6;
@@ -797,76 +928,48 @@ ArmTrap =1;
 DimpleTrap = 0;
 DimpleToArmTrap = 0;
 
+EvapThenTranslate = 0;
+
 if ArmTrap
-%     CentralMicroCap = 0/ CentralMicroCal; 
-%     ArmsMicroCap = -.8/ ArmsMicroCal; 
-%     BiasMacroMicro = 40 / MacroBiasCal; 
-%     XMicroCap = 3 / MagXCal; 
-%     YMicroCap = YBias;
-%     ZMicroCap = 0 / MagZCal;
-% 
-%     CentralMacroMicro =31/ MacroCentralCal;
-%     AxialMacroMicro =12/MacroAxialCal;
-%     DimpleMicroCap=0/DimpleMicroCal;
-%     CompressMacroMicro = 0;
-%     
-%     MicroRampTime = 400e-3; %Time to ramp up microwires
-%     CentralRampTime = 2e-3; % Time to ramp off central macrowire
-%     MacroMicroWaitTime = 0e-3;
-%     MacroMicroRampTime = MicroRampTime; %Time to ramp down macro wires best
-%     MicroCapHoldTime = 100e-3;
-%     
-%     MicroCapRelaxTime = 1e-3;
-%     AxialMacroRelax = 0/ MacroAxialCal;
-%     ArmsMicroRelax = 0/ArmsMicroCal;
-%     DimpleMicroRelax = 0/ DimpleMicroCal;
+
 %%Chip V2
-    CentralMicroCap = -2/ CentralMicroCal; 
-    ArmsMicroCap = -.5 / ArmsMicroCal; 
-    BiasMacroMicro = 6 / MacroBiasCal; 
-    XMicroCap = 0 / MagXCal; 
-    YMicroCap = YBias;
+    CentralMicroCap =-2.5/ CentralMicroCal;  
+%     CentralMicroCap =0/ CentralMicroCal;  
+%     ArmsMicroCap = -.5/ ArmsMicroCal; 
+    ArmsMicroCap = 0/ ArmsMicroCal;
+%     ArmsMicroCap = 0/ ArmsMicroCal;
+%     BiasMacroMicro = 12.8 / MacroBiasCal; 
+%     BiasMacroMicro = 25/ MacroBiasCal; 
+    BiasMacroMicro = 23 / MacroBiasCal; 
+    XMicroCap =0.0/ MagXCal;
+    YMicroCap = 0;
     ZMicroCap = 0 / MagZCal;
 
     CentralMacroMicro =0 / MacroCentralCal;
-    AxialMacroMicro =0/MacroAxialCal;
     DimpleMicroCap=0/DimpleMicroCal;
+    AxialMacroMicro =0/MacroAxialCal;
     CompressMacroMicro = 0;
     
-    MicroRampTime = 400e-3; %Time to ramp up microwires
-    CentralRampTime = 2e-3; % Time to ramp off central macrowire
-    MacroMicroWaitTime = 0e-3;
-    MacroMicroRampTime = MicroRampTime; %Time to ramp down macro wires best
-    MicroCapHoldTime = 100e-3;
-    
-    MicroCapRelaxTime = 1e-3;
-    AxialMacroRelax = 0/ MacroAxialCal;
-    ArmsMicroRelax = 0/ArmsMicroCal;
-    DimpleMicroRelax = 0/ DimpleMicroCal;
+%     MicroRampTime = 100*ms; %Best %Time to ramp up microwires
 
-%%Chip v1
-%     CentralMicroCap = -1.95/ CentralMicroCal; 
-%     ArmsMicroCap = 1.5 / ArmsMicroCal; 
-%     BiasMacroMicro = 35 / MacroBiasCal; 
-%     XMicroCap = 5 / MagXCal; 
-%     YMicroCap = YBias;
-%     ZMicroCap = 0 / MagZCal;
-% 
-%     CentralMacroMicro = 0;
-%     AxialMacroMicro = 0/MacroAxialCal;
-%     DimpleMicroCap=0/DimpleMicroCal;
-%     CompressMacroMicro = 0;
-%     
-%     MicroRampTime = 400e-3; %Time to ramp up microwires
-%     CentralRampTime = 2e-3; % Time to ramp off central macrowire
-%     MacroMicroWaitTime = 0e-3;
-%     MacroMicroRampTime = MicroRampTime; %Time to ramp down macro wires best
-%     MicroCapHoldTime = 1e-3;
-%     
-%     MicroCapRelaxTime = 1e-3;
-%     AxialMacroRelax = 0/ MacroAxialCal;
-%     ArmsMicroRelax = 1/ArmsMicroCal;
-%     DimpleMicroRelax = 0/ DimpleMicroCal;
+    MicroRampTime = 100*ms; %Test %Time to ramp up microwires
+    MacroMicroWaitTime = 1*ms;
+%      MacroMicroWaitTime = MicroRampTime;
+    MacroMicroRampTime = MicroRampTime; %Time to ramp down macro wires best
+    MicroCapHoldTime =[1];
+    
+    MicroCapRelaxTime = 1*ms;
+    AxialMacroRelax = AxialMacroMicro;
+    ArmsMicroRelax = ArmsMicroCap;
+    DimpleMicroRelax = DimpleMicroCap;
+
+    
+%     MicroCapParaAmp = 0.07 / CentralMicroCal;
+%     MicroCompParaFreq = linspace(10,210,25);
+%     MicroCompParaFreq = 600;
+    
+%     MicroCapKickAmp = 0.05 / CentralMicroCal;
+
 end
 if DimpleTrap
 %     CentralMicroCap = -1.95/ CentralMicroCal;
@@ -884,13 +987,13 @@ if DimpleTrap
     DimpleMicroCap = -1.5/ DimpleMicroCal;
     CompressMacroMicro = 0;
     
-    MicroRampTime = 400e-3; %Time to ramp up microwires
-    CentralRampTime = 2e-3; % Time to ramp off central macrowire
-    MacroMicroWaitTime = 0e-3;
+    MicroRampTime = 400*ms; %Time to ramp up microwires
+    CentralRampTime = 2*ms; % Time to ramp off central macrowire
+    MacroMicroWaitTime = 0*ms;
     MacroMicroRampTime = MicroRampTime; %Time to ramp down macro wires best
-    MicroCapHoldTime = 10e-3; %sec 
+    MicroCapHoldTime = 10*ms; %sec 
     
-    MicroCapRelaxTime = 1e-3;
+    MicroCapRelaxTime = 1*ms;
     AxialMacroRelax = 8/ MacroAxialCal;
     ArmsMicroRelax = 0/ArmsMicroCal;
     DimpleMicroRelax = DimpleMicroCap;
@@ -908,13 +1011,13 @@ if DimpleToArmTrap
     DimpleMicroCap = -1.5/ DimpleMicroCal;
     CompressMacroMicro = 0;
     
-    MicroRampTime = 400e-3; %Time to ramp up microwires
-    CentralRampTime = 2e-3; % Time to ramp off central macrowire
-    MacroMicroWaitTime = 0e-3;
+    MicroRampTime = 400*ms; %Time to ramp up microwires
+    CentralRampTime = 2*ms; % Time to ramp off central macrowire
+    MacroMicroWaitTime = 0*ms;
     MacroMicroRampTime = MicroRampTime; %Time to ramp down macro wires best
-    MicroCapHoldTime = 1e-3; %sec 
+    MicroCapHoldTime = 1*ms; %sec 
     
-    DimpleArmTransferTime = 500e-3;
+    DimpleArmTransferTime = 500*ms;
     AxialMacroRelax = 0/ MacroAxialCal;
     ArmsMicroRelax = 1/ArmsMicroCal;
     DimpleMicroRelax = 0/ DimpleMicroCal;
@@ -925,33 +1028,98 @@ if DimpleToArmTrap
     
     DimpleEvapHigh = MacroCompRFLow;
     DimpleEvapLow = 3e6;
-    DimpleEvapSweepTime = 1500e-3;
+    DimpleEvapSweepTime = 1500*ms;
 
     ArmEvapHigh =15e6;
     ArmEvapLow = 4.4e6;
-    ArmEvapSweepTime = 2500e-3;
+    ArmEvapSweepTime = 2500*ms;
 
     MicroCaptureTime =  MicroCapHoldTime + max(MicroRampTime,MacroMicroWaitTime + MacroMicroRampTime) + DimpleEvapSweepTime + ArmEvapSweepTime + DimpleArmTransferTime;  
 else    
-    MicroCapRFHigh =15e6;
-    MicroCapRFLow = 14.9e6;
-%     MicroCapRFSweepTime = MicroCapHoldTime-MicroCapRelaxTime;
-    MicroCapRFVVA =0;
-    MicroCapEvapRate = 5e6; 
-    MicroCapRFSweepTime = (MicroCapRFHigh - MicroCapRFLow)/MicroCapEvapRate;
+%     RateScaling = 1;
+%     MicroCapRFHigh =10e6;
+%     MicroCapRFLow = 2e6;
+%     MicroCapRFRate =5e6 * RateScaling;
+
+    RateScaling = 1;
+%     Best
+    MicroCapRFHigh =10e6;
+    MicroCapRFLow = 2.5e6;
+    MicroCapRFRate =5e6 * RateScaling;
+
+%     Test
+%     MicroCapRFHigh =10e6;
+%     MicroCapRFLow = 3e6;
+%     MicroCapRFRate =5e6 * RateScaling;
     
-    MicroCaptureTime = MicroCapHoldTime + MicroCapRFSweepTime + max(MicroRampTime,MacroMicroWaitTime + MacroMicroRampTime);
+%     MicroCapRFSweepTime = (MicroCapRFHigh-MicroCapRFLow)/MicroCapRFRate;
+    MicroCapRFSweepTime = 1*ms;
+    MicroCapRFVVA =0;
+    
+    TWOSTEPMICROEVAP =0;
+    THREESTEPMICROEVAP =0;   
+     
+    if TWOSTEPMICROEVAP
+        MicroCapRFHigh2 = MicroCapRFLow + 1e3;
+        MicroCapRFLow2 =2.0e6;
+        MicroCapRFRate2 = 1e6 * RateScaling;
+        MicroCapRFSweepTime2 = (MicroCapRFHigh2-MicroCapRFLow2)/MicroCapRFRate2;
+%         MicroCapRFSweepTime2 = 1000*ms;
+        EvapDelayTime = 10*ms;
+        
+        
+%         MicroCapRFHigh2 = MicroCapRFLow + 1e3;
+%         MicroCapRFLow2 = .5e6;
+%         MicroCapRFRate2 = .5e6 * RateScaling;
+%         MicroCapRFSweepTime2 = (MicroCapRFHigh2-MicroCapRFLow2)/MicroCapRFRate2;
+% %         MicroCapRFSweepTime2 = 1000*ms;
+%         EvapDelayTime = 10*ms;
+    end
+    if THREESTEPMICROEVAP
+        MicroCapRFHigh3 = MicroCapRFLow2 + 1e3;
+        MicroCapRFLow3 = 1.3e6;
+        MicroCapRFRate3 = .1e6 * RateScaling;
+        MicroCapRFSweepTime3 = (MicroCapRFHigh3-MicroCapRFLow3)/MicroCapRFRate3;
+%         MicroCapRFSweepTime2 = 1000*ms;
+        EvapDelayTime3 = 10*ms;
+    end
+
+
+    if TWOSTEPMICROEVAP && THREESTEPMICROEVAP
+        MicroCaptureTime = EvapDelayTime+EvapDelayTime3+MicroCapHoldTime + MicroCapRFSweepTime + MicroCapRFSweepTime3+MicroCapRFSweepTime2 + max(MicroRampTime,MacroMicroWaitTime + MacroMicroRampTime);
+    elseif TWOSTEPMICROEVAP
+        MicroCaptureTime = EvapDelayTime+MicroCapHoldTime + MicroCapRFSweepTime + MicroCapRFSweepTime2 + max(MicroRampTime,MacroMicroWaitTime + MacroMicroRampTime);
+    else
+        MicroCaptureTime = MicroCapHoldTime + MicroCapRFSweepTime + max(MicroRampTime,MacroMicroWaitTime + MacroMicroRampTime);
+    end
 end
 
+if EvapThenTranslate
+    MicroTransTime = 100*ms;
+    
+    CentralMicroTrans =-2.5/ CentralMicroCal;  
+    ArmsMicroTrans = -.5/ ArmsMicroCal; 
+    BiasMacroMicroTrans = 28 / MacroBiasCal; 
+    XMicroTrans =3/ MagXCal;
+    YMicroTrans = 0;
+    ZMicroTrans = 0 / MagZCal;
+
+    CentralMacroMicroTrans =0 / MacroCentralCal;
+    DimpleMicroTrans=0/DimpleMicroCal;
+    AxialMacroMicroTrans =0/MacroAxialCal;
+    CompressMacroMicroTrans = 0;
+    
+    MicroCaptureTime = MicroCaptureTime + MicroTransTime;
+end
 
 %%%%%% Two StepEvap %%%%%%%%%%
 % DimpleEvapHigh = MacroCompRFLow;
 % DimpleEvapLow = 2.5e6;
-% DimpleEvapSweepTime = 2000e-3;
+% DimpleEvapSweepTime = 2000*ms;
 % 
 % ArmEvapHigh =10e6;
 % ArmEvapLow = 8e6;
-% ArmEvapSweepTime = 2000e-3;
+% ArmEvapSweepTime = 2000*ms;
 % 
 % MicroCaptureTime =  MicroCapHoldTime + max(MicroRampTime,MacroMicroWaitTime + MacroMicroRampTime) + DimpleEvapSweepTime + ArmEvapSweepTime + DimpleArmTransferTime;
 %%%%------------------%%%%%
@@ -968,7 +1136,7 @@ end
 
 
 %% For Off
-OffTime=1; %sec, Amount of time keep the machine off
+OffTime=3; %sec, Amount of time keep the machine off
 
 %% Logics
 CAMERASHUTOPEN = 1;
@@ -1024,62 +1192,71 @@ MAGTRIGOFF = 7.5;
 MAGTRIGON = 0;
 
 %% For Shutters
-% CAMERAONTIME = 8e-3; %best
-CAMERAONTIME = 13e-3;
+% CAMERAONTIME = 13*ms; %best
+CAMERAONTIME = 18*ms;
 CAMERAOFFTIME = 0;
 
 IMAGING1ONS = 1000e-6;%sec, from calibration in sequence
 IMAGING1OFFS = 1200e-6;%sec, from calibration in sequence
 
-IMAGING1OND = 50e-3; %sec, test, works better
-IMAGING1OFFD = 10e-3;%sec, from calibration in sequence
+IMAGING1OND = 50*ms; %sec, test, works better
+IMAGING1OFFD = 10*ms;%sec, from calibration in sequence
 
-IMAGING4ONTIME = 23e-3; %Guess
+IMAGING4ONTIME = 23*ms; %Guess
 IMAGING4OFFTIME = 0;
 
-ZRSHUTOFFTIME = 13e-3;
-ZRSHUTONTIME = 26.2e-3;
+ZRSHUTOFFTIME = 13*ms;
+ZRSHUTONTIME = 26.2*ms;
 
-SIGMINUSSHUTONTIME = 26e-3;
-% SIGMINUSSHUTOFFTIME = 31.8e-3;
+SIGMINUSSHUTONTIME = 26*ms;
+% SIGMINUSSHUTOFFTIME = 31.8*ms;
 SIGMINUSSHUTOFFTIME = 0;
 
-OPIMG1OPEN =18.2e-3;
-OPIMG2OPEN =18.2e-3;
+OPIMG1OPEN =18.2*ms;
+OPIMG2OPEN =18.2*ms;
 
 %% Calibrated 3-27-12
-MOTPSHUTTERON = 29.6e-3;
-MOTPSHUTTEROFF = 15.4e-3; %real
-% MOTPSHUTTEROFF = 16e-3; %test
+MOTPSHUTTERON = 29.6*ms;
+MOTPSHUTTEROFF = 15.4*ms; %real
+% MOTPSHUTTEROFF = 16*ms; %test
 % 
-MOTRSHUTONTIME = 26e-3;
-MOTRSHUTOFFTIME = 13e-3;
-% MOTRSHUTOFFTIME = 0e-3;
+MOTRSHUTONTIME = 26*ms;
+MOTRSHUTOFFTIME = 13*ms;
+% MOTRSHUTOFFTIME = 0*ms;
 
-ZPSHUTONTIME = 30e-3;
-% ZPSHUTOFFTIME = 12.8e-3; %real
-ZPSHUTOFFTIME = 20e-3; %real2
-% ZPSHUTOFFTIME = 500e-3; %test
+ZPSHUTONTIME = 30*ms;
+% ZPSHUTOFFTIME = 12.8*ms; %real
+% ZPSHUTOFFTIME = 20*ms; %real2
+ZPSHUTOFFTIME = 100*ms; %test
 
-IMG2SHUTONTIME = 30.8e-3;
-IMG2SHUTOFFTIME = 11.6e-3;
+IMG2SHUTONTIME = 30.8*ms; %Best
+% IMG2SHUTONTIME = 50*ms;
+IMG2SHUTOFFTIME = 11.6*ms; %Best
+% IMG2SHUTOFFTIME = 0*ms;
 
-VERTSHUTONTIME = 50e-3; %38
-VERTSHUTOFFTIME = 11.8e-3;
+VERTSHUTONTIME = 50*ms; %38
+VERTSHUTOFFTIME = 11.8*ms;
 
-% SIGPLUSSHUTOFFTIME = 11.8e-3;
+% SIGPLUSSHUTOFFTIME = 11.8*ms;
 SIGPLUSSHUTOFFTIME = 0;
-% SIGPLUSSHUTONTIME = 29.6e-3; %real
-SIGPLUSSHUTONTIME = 37e-3; %best
-% SIGPLUSSHUTONTIME = 39e-3; %test
+% SIGPLUSSHUTONTIME = 29.6*ms; %real
+SIGPLUSSHUTONTIME = 37*ms; %best
+% SIGPLUSSHUTONTIME = 39*ms; %test
 
-IMG1SHUTONTIME = 32e-3;
-IMG1SHUTOFFTIME = 11.8e-3;
+IMG1SHUTONTIME = 32*ms;
+IMG1SHUTOFFTIME = 11.8*ms;
 
-ACRONTIME = 27.2e-3; %test
-ACROFFTIME = 14.4e-3;
+ACRONTIME = 29.2*ms; %test
+% ACRONTIME = 27.2*ms; %Best
+ACROFFTIME = 14.4*ms;
 
-ODTIMGSHUTTERONTIME =500e-3;
+ODTIMGSHUTTERONTIME =500*ms;
+
+
+%% XPS
+
+XPS_IP = '171.64.84.123';
+XPS_Port = 5001;
 
 % DDS Test Parameters
 % 

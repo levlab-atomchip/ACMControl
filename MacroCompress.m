@@ -69,9 +69,16 @@ CentralMacroVoltage.ss(CentralMacComp,0,'end')
 AxialMacroVoltage.ss(AxialMacComp,0,'end')
 MacroDimpleVoltage.ss(DimpleMacroComp,0,'end')
 
+%Regular Linear Compression
 BiasMacroVoltage.linear(BiasMacCap,BiasMacComp,0,MacroCompRampTime)
 CentralMacroVoltage.linear(CentralMacCap,CentralMacComp,0,MacroCompRampTime)
 AxialMacroVoltage.linear(AxialMacCap,AxialMacComp,0,MacroCompRampTime)
+
+% % ERF compress
+% ex.LoadHybrid.Quadrupole.erf(0,HybridStartBGrad,0,PURIFYERFTIME,PURIFYOFFSET)
+% BiasMacroVoltage.erf(BiasMacCap,BiasMacComp,0,MacroCompRampTime,0)
+% CentralMacroVoltage.erf(CentralMacCap,CentralMacComp,0,MacroCompRampTime,0)
+% AxialMacroVoltage.erf(AxialMacCap,AxialMacComp,0,MacroCompRampTime,0)
 
 MacroDimpleVoltage.linear(DimpleMacroCap,DimpleMacroComp,0,MacroCompRampTime)
 MagellanZTrigger.ss(0,0,'end')
@@ -81,6 +88,9 @@ CentralMicroVoltage.ss(0,0,'end')
 
 % CentralMacroVoltage.sinoffset(CentralMacComp,MacroCompParaAmp,MacroCompParaFreq,MacroCompRampTime,'end')
 % disp('Central Mac Trap Dither')
+% disp('Axial Mac Trap Dither')
+% AxialMacroVoltage.sinoffset(AxialMacComp,MacroCompParaAmp,MacroCompParaFreq,MacroCompRampTime,'end')
+
 % CentralMicroVoltage.ss(0,0,'end')
 
 ArmsMicroVoltage.ss(0,0,'end')
@@ -100,3 +110,5 @@ BeatNoteFreq.setfreq(ImageFreq,0,'end')
 RFFreq.setfreq(MacroCompRFHigh,0,MacroCompRampTime)
 RFFreq.setfreq(MacroCompRFLow,MacroCompRampTime + MacroCompRFSweepTime,'end')
 RFFreq.setfreqsweep(MacroCompRFHigh,MacroCompRFLow,MacroCompRampTime,MacroCompRampTime + MacroCompRFSweepTime)
+
+% Indicator.ss('on',0,dt)

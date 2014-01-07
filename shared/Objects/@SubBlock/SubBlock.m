@@ -54,11 +54,15 @@ classdef SubBlock < handle
             if ~exist([obj.subBlockName '.m'],'file')
                 error(['SubBlock file ' obj.subBlockName ' does not exist.'])
             end
+            
             sbfile = fopen([obj.subBlockName '.m'],'r+');
+            
+            
             exestr = '';
             fulltext = fscanf(sbfile,'%c');
             fseek(sbfile,0,'bof');
             sbtext = fgetl(sbfile);
+            
             while ischar(sbtext)
                 periods = find(sbtext=='.');
                 for i = length(periods):-1:1
@@ -84,12 +88,15 @@ classdef SubBlock < handle
                 exestr = [exestr sbtext];
                 sbtext = fgetl(sbfile);
             end
+            
             exestr = strrep(exestr,'%','%%');
             fseek(sbfile,0,'bof');
             fprintf(sbfile,exestr);
             fclose(sbfile);
             try
+                
                 evalin('base',['rehash;' obj.subBlockName]);
+                
             catch msg
                 sbfile = fopen([obj.subBlockName '.m'],'w');
                 fprintf(sbfile,'%c',fulltext);

@@ -23,7 +23,7 @@ function varargout = ControllerGUI(varargin)
 
 % Edit the above text to modify the response to help ControllerGUI
 
-% Last Modified by GUIDE v2.5 11-Jul-2012 14:00:51
+% Last Modified by GUIDE v2.5 15-Oct-2013 14:10:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -66,8 +66,8 @@ addpath(GUIDir)
 set(handles.title_txt,'userdata',GUIDir,'String','Controller Code GUI')
 
 % Initialize some values
-set(handles.NormalMode_rbtn,'Value',1,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
-set(handles.DataRunNum_etxt,'String','0','KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
+% set(handles.NormalMode_rbtn,'Value',1,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
+% set(handles.DataRunNum_etxt,'String','0','KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
 set(handles.Status_txt,'String','--')
 set(handles.CurrNumRuns_txt,'String','--')
 set(handles.TotalNumRuns_txt,'String','--')
@@ -75,10 +75,10 @@ set(handles.SaveProfile_btn,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mai
 set(handles.LoadProfile_btn,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
 set(handles.RunStop_btn,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
 set(handles.ClearAll_btn,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
-set(handles.DataParentFolder_etxt,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
-set(handles.DataRunNum_etxt,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
-set(handles.Reset_btn,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
-set(handles.DataMode_rbtn,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
+% set(handles.DataParentFolder_etxt,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
+% set(handles.DataRunNum_etxt,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
+% set(handles.Reset_btn,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
+% set(handles.DataMode_rbtn,'KeyPressFcn',@(hObject,eventdata)ControllerGUI('mainfigure_KeyPressFcn',hObject,eventdata,guidata(hObject)))
 set(handles.hardstop_btn,'userdata',0)
 
 
@@ -104,13 +104,13 @@ RunDefined = get(handles.(['RunFile' num2str(n)]),'enable');
 if strcmp(RunDefined,'off')
     return
 end
-set(handles.DataMode_rbtn,'enable','off')
-set(handles.NormalMode_rbtn,'enable','off')
+% set(handles.DataMode_rbtn,'enable','off')
+% set(handles.NormalMode_rbtn,'enable','off')
 for i = 1:26
     runEnabled{i} = get(handles.(['RunFile' num2str(i)]),'enable');
     set(handles.(['RunFile' num2str(i)]),'enable','off')
 end
-switch get(handles.DataMode_rbtn,'Value') %Avoid clear if data mode already running
+switch 0;%get(handles.DataMode_rbtn,'Value') %Avoid clear if data mode already running
     case 0
         set(handles.RunStop_btn,'userdata',0) % make sure stop trigger is 0 when 'Run' is selected
         set(handles.hardstop_btn,'userdata',0)
@@ -133,127 +133,152 @@ switch get(handles.DataMode_rbtn,'Value') %Avoid clear if data mode already runn
             cd(assignedFile{2});
             assignedFileName = strrep(assignedFile{1},'.m','');
             
-            DataMode = get(handles.DataMode_rbtn,'Value');
-            CustomName = get(handles.DataCustomName_cbox,'Value');
-            ImgParentFolder = get(handles.DataParentFolder_etxt,'String');
-            ImgSetNum = get(handles.DataRunNum_etxt,'String');
-            FileName = get(handles.DataCustomName_etxt,'String');
-%             save('Z:\Controllor Code\ImagingData\RunData.mat','DataMode','CustomName','ImgParentFolder','ImgSetNum','FileName','-append');
+%             DataMode = get(handles.DataMode_rbtn,'Value');
+%             CustomName = get(handles.DataCustomName_cbox,'Value');
+%             ImgParentFolder = get(handles.DataParentFolder_etxt,'String');
+%             ImgSetNum = get(handles.DataRunNum_etxt,'String');
+%             FileName = get(handles.DataCustomName_etxt,'String');
+%             
+%             while 1
+%                 if ls('I:\lock')
+%                     continue
+%                 end
+%                 disp(1)
+%                 save('I:\RunData.mat','DataMode','CustomName','ImgParentFolder','ImgSetNum','FileName','-append');
+%                 break
+%             end
+            
             try
                 eval(assignedFileName)
             catch err
                 for i = 1:26
                     tempStr =  runEnabled{i};
                     set(handles.(['RunFile' num2str(i)]),'enable',tempStr)
-                end 
-                set(handles.DataMode_rbtn,'enable','on')
-                set(handles.NormalMode_rbtn,'enable','on')
+                end
+%                 set(handles.DataMode_rbtn,'enable','on')
+%                 set(handles.NormalMode_rbtn,'enable','on')
                 rethrow(err)
             end
         end
         set(handles.StatusState_txt,'String','Done!')
-        set(handles.RunStop_btn,'userdata',0)
-        set(handles.hardstop_btn,'userdata',0)
+%         set(handles.RunStop_btn,'userdata',0)
+%         set(handles.hardstop_btn,'userdata',0)
         
         
-    case 1
-        set(handles.DataParentFolder_etxt,'enable','off')
-        set(handles.DataRunNum_etxt,'enable','off')
-        set(handles.Reset_btn,'enable','off')
-        set(handles.DataCustomName_cbox,'enable','off')
-        set(handles.DataCustomName_etxt,'enable','off')
-        switch get(handles.(['RunFile' num2str(n)]),'userdata') %prompt for rerun only
-            case 1
-                set(handles.RunStop_btn,'userdata',0) % make sure stop trigger is 0 when 'Run' is selected
-                set(handles.hardstop_btn,'userdata',0)
-                status_cells = get(handles.Status_txt,'userdata'); % load names of different files
-                set(handles.Status_txt,'String',status_cells{n})
-                set(handles.(['RunFile' num2str(n)]),'BackgroundColor','red','userdata',0)
-                set(handles.TotalNumRuns_txt,'String',1)
-                set(handles.CurrNumRuns_txt,'String',1)
-                set(handles.StatusState_txt,'String','Running')
-                drawnow
-                clc
-                assignedFile = get(handles.(['FileName' num2str(n)]),'userdata');
-                cd(assignedFile{2});
-                assignedFileName = strrep(assignedFile{1},'.m','');
-                
-                DataMode = get(handles.DataMode_rbtn,'Value');
-                CustomName = get(handles.DataCustomName_cbox,'Value');
-                ImgParentFolder = get(handles.DataParentFolder_etxt,'String');
-                ImgSetNum = get(handles.DataRunNum_etxt,'String');
-                FileName = get(handles.DataCustomName_etxt,'String');
-                save('Z:\Data\ACM Data\ImagingData\ACMRunData.mat','DataMode','CustomName','ImgParentFolder','ImgSetNum','FileName','-append');
-                
-                try
-                    eval(assignedFileName)
-                catch err
-                    for i = 1:26
-                        tempStr =  runEnabled{i};
-                        set(handles.(['RunFile' num2str(i)]),'enable',tempStr)
-                    end
-                    set(handles.DataMode_rbtn,'enable','on')
-                    set(handles.NormalMode_rbtn,'enable','on')
-                    throw(err)
-                end
-                set(handles.StatusState_txt,'String','Done!')
-                
-            case 0
-                rerun_question = questdlg('Run this code again?','Rerun code...','Yes','No','No');
-                switch rerun_question
-                    case 'Yes'
-                        set(handles.RunStop_btn,'userdata',0) % make sure stop trigger is 0 when 'Run' is selected
-                        set(handles.hardstop_btn,'userdata',0)
-                        status_cells = get(handles.Status_txt,'userdata'); % load names of different files
-                        set(handles.Status_txt,'String',status_cells{n})
-                        set(handles.TotalNumRuns_txt,'String',1)
-                        set(handles.CurrNumRuns_txt,'String',1)
-                        set(handles.StatusState_txt,'String','Running')
-                        drawnow
-                        clc
-                        assignedFile = get(handles.(['FileName' num2str(n)]),'userdata');
-                        cd(assignedFile{2});
-                        assignedFileName = strrep(assignedFile{1},'.m','');
-                        
-                        DataMode = get(handles.DataMode_rbtn,'Value');
-                        CustomName = get(handles.DataCustomName_cbox,'Value');
-                        ImgParentFolder = get(handles.DataParentFolder_etxt,'String');
-                        ImgSetNum = get(handles.DataRunNum_etxt,'String');
-                        FileName = get(handles.DataCustomName_etxt,'String');
-                        save('Z:\Data\ACM Data\ImagingData\ACMRunData.mat','DataMode','CustomName','ImgParentFolder','ImgSetNum','FileName','-append');
-                        
-                        try
-                            eval(assignedFileName)
-                        catch err
-                            for i = 1:26
-                                tempStr =  runEnabled{i};
-                                set(handles.(['RunFile' num2str(i)]),'enable',tempStr)
-                            end
-                            set(handles.DataMode_rbtn,'enable','on')
-                            set(handles.NormalMode_rbtn,'enable','on')
-                            throw(err)
-                        end
-                        set(handles.StatusState_txt,'String','Done!')
-                        
-                    case 'No'
-                end
-                
-                
-        end
-        set(handles.DataParentFolder_etxt,'enable','on')
-        set(handles.DataRunNum_etxt,'enable','on')
-        set(handles.Reset_btn,'enable','on')
-        set(handles.DataCustomName_cbox,'enable','on')
-        if get(handles.DataCustomName_cbox,'Value')
-            set(handles.DataCustomName_etxt,'enable','on')
-        end
+%     case 1
+%         set(handles.DataParentFolder_etxt,'enable','off')
+%         set(handles.DataRunNum_etxt,'enable','off')
+%         set(handles.Reset_btn,'enable','off')
+%         set(handles.DataCustomName_cbox,'enable','off')
+%         set(handles.DataCustomName_etxt,'enable','off')
+%         switch get(handles.(['RunFile' num2str(n)]),'userdata') %prompt for rerun only
+%             case 1
+%                 set(handles.RunStop_btn,'userdata',0) % make sure stop trigger is 0 when 'Run' is selected
+%                 set(handles.hardstop_btn,'userdata',0)
+%                 status_cells = get(handles.Status_txt,'userdata'); % load names of different files
+%                 set(handles.Status_txt,'String',status_cells{n})
+%                 set(handles.(['RunFile' num2str(n)]),'BackgroundColor','red','userdata',0)
+%                 set(handles.TotalNumRuns_txt,'String',1)
+%                 set(handles.CurrNumRuns_txt,'String',1)
+%                 set(handles.StatusState_txt,'String','Running')
+%                 drawnow
+%                 clc
+%                 assignedFile = get(handles.(['FileName' num2str(n)]),'userdata');
+%                 cd(assignedFile{2});
+%                 assignedFileName = strrep(assignedFile{1},'.m','');
+%                 
+%                 DataMode = get(handles.DataMode_rbtn,'Value');
+%                 CustomName = get(handles.DataCustomName_cbox,'Value');
+%                 ImgParentFolder = get(handles.DataParentFolder_etxt,'String');
+%                 ImgSetNum = get(handles.DataRunNum_etxt,'String');
+%                 FileName = get(handles.DataCustomName_etxt,'String');
+%                 
+%                 while 1
+%                     if ls('I:\lock')
+%                         continue
+%                     end
+%                     save('I:\RunData.mat','DataMode','CustomName','ImgParentFolder','ImgSetNum','FileName','-append');
+%                     break
+%                 end
+%                 
+%                 
+%                 try
+%                     eval(assignedFileName)
+%                 catch err
+%                     for i = 1:26
+%                         tempStr =  runEnabled{i};
+%                         set(handles.(['RunFile' num2str(i)]),'enable',tempStr)
+%                     end
+%                     set(handles.DataMode_rbtn,'enable','on')
+%                     set(handles.NormalMode_rbtn,'enable','on')
+%                     throw(err)
+%                 end
+%                 set(handles.StatusState_txt,'String','Done!')
+%                 
+%             case 0
+%                 rerun_question = questdlg('Run this code again?','Rerun code...','Yes','No','No');
+%                 switch rerun_question
+%                     case 'Yes'
+%                         set(handles.RunStop_btn,'userdata',0) % make sure stop trigger is 0 when 'Run' is selected
+%                         set(handles.hardstop_btn,'userdata',0)
+%                         status_cells = get(handles.Status_txt,'userdata'); % load names of different files
+%                         set(handles.Status_txt,'String',status_cells{n})
+%                         set(handles.TotalNumRuns_txt,'String',1)
+%                         set(handles.CurrNumRuns_txt,'String',1)
+%                         set(handles.StatusState_txt,'String','Running')
+%                         drawnow
+%                         clc
+%                         assignedFile = get(handles.(['FileName' num2str(n)]),'userdata');
+%                         cd(assignedFile{2});
+%                         assignedFileName = strrep(assignedFile{1},'.m','');
+%                         
+%                         DataMode = get(handles.DataMode_rbtn,'Value');
+%                         CustomName = get(handles.DataCustomName_cbox,'Value');
+%                         ImgParentFolder = get(handles.DataParentFolder_etxt,'String');
+%                         ImgSetNum = get(handles.DataRunNum_etxt,'String');
+%                         FileName = get(handles.DataCustomName_etxt,'String');
+%                         
+%                         while 1
+%                             if ls('I:\lock')
+%                                 continue
+%                             end
+%                             save('I:\RunData.mat','DataMode','CustomName','ImgParentFolder','ImgSetNum','FileName','-append');
+%                             break
+%                         end
+%                         
+%                         
+%                         try
+%                             eval(assignedFileName)
+%                         catch err
+%                             for i = 1:26
+%                                 tempStr =  runEnabled{i};
+%                                 set(handles.(['RunFile' num2str(i)]),'enable',tempStr)
+%                             end
+%                             set(handles.DataMode_rbtn,'enable','on')
+%                             set(handles.NormalMode_rbtn,'enable','on')
+%                             throw(err)
+%                         end
+%                         set(handles.StatusState_txt,'String','Done!')
+%                         
+%                     case 'No'
+%                 end
+%                 
+%                 
+%         end
+%         set(handles.DataParentFolder_etxt,'enable','on')
+%         set(handles.DataRunNum_etxt,'enable','on')
+%         set(handles.Reset_btn,'enable','on')
+%         set(handles.DataCustomName_cbox,'enable','on')
+%         if get(handles.DataCustomName_cbox,'Value')
+%             set(handles.DataCustomName_etxt,'enable','on')
+%         end
 end
 for i = 1:26
     tempStr =  runEnabled{i};
     set(handles.(['RunFile' num2str(i)]),'enable',tempStr)
 end
-set(handles.DataMode_rbtn,'enable','on')
-set(handles.NormalMode_rbtn,'enable','on')
+% set(handles.DataMode_rbtn,'enable','on')
+% set(handles.NormalMode_rbtn,'enable','on')
 
 function FolderButtons(hObject, eventdata, handles, n)
 cd(fileparts(mfilename('fullpath')))
@@ -264,6 +289,10 @@ if setFile ~= 0
     justname = strrep(justname,'GUIRun_','');
     justname = strrep(justname,'xo','.');
     justname = strrep(justname,'xn','-');
+    if strcmp(justname,'VOID_0')
+        bslash = find(setFolder=='\');
+        justname = setFolder(bslash((end-1)):end-1);
+    end
     assignedFile = {setFile setFolder};
     set(handles.(['FileName' num2str(n)]),'String',justname,'userdata',assignedFile)
     set(handles.(['RunFile' num2str(n)]),'enable','on')
@@ -274,6 +303,8 @@ end
 
 function RunStop_btn_Callback(hObject, eventdata, handles)
 set(handles.RunStop_btn,'userdata',1)
+set(handles.runall_btn,'userdata',1)
+set(handles.randrunall_btn,'userdata',1)
 
 % --- Outputs from this function are returned to the command line.
 function varargout = ControllerGUI_OutputFcn(hObject, eventdata, handles)
@@ -317,9 +348,9 @@ if pathname ~= 0
         set(handles.(['FileName' num2str(n)]),'userdata',AssignedFiles{n},'String',FileNames{n});
         set(handles.(['RunFile' num2str(n)]),'enable',RunEnable{n});
         set(handles.Status_txt,'userdata',status_cells);
-        set(handles.DataParentFolder_etxt,'String',ImgParentFolder);
-        set(handles.DataRunNum_etxt,'String',ImgSetNum);
-        set(handles.DataCustomName_etxt,'String',CustFileName);
+%         set(handles.DataParentFolder_etxt,'String',ImgParentFolder);
+%         set(handles.DataRunNum_etxt,'String',ImgSetNum);
+%         set(handles.DataCustomName_etxt,'String',CustFileName);
     end
 end
 
@@ -337,133 +368,133 @@ if path~= 0
         RunEnable{n} = get(handles.(['RunFile' num2str(n)]),'enable');
         status_cells = get(handles.Status_txt,'userdata');
     end
-    ImgParentFolder = get(handles.DataParentFolder_etxt,'String');
-    ImgSetNum = get(handles.DataRunNum_etxt,'String');
-    CustFileName = get(handles.DataCustomName_etxt,'String');
+%     ImgParentFolder = get(handles.DataParentFolder_etxt,'String');
+%     ImgSetNum = get(handles.DataRunNum_etxt,'String');
+%     CustFileName = get(handles.DataCustomName_etxt,'String');
     profileFile = fullfile(pathname,filename);
-    save(profileFile,'AssignedFiles','FileNames','RunEnable','status_cells','ImgParentFolder','ImgSetNum','CustFileName');
+    save(profileFile,'AssignedFiles','FileNames','RunEnable','status_cells');%,'ImgParentFolder','ImgSetNum','CustFileName');
 end
 
 
 
-% --- Executes on button press in NormalMode_rbtn.
-function NormalMode_rbtn_Callback(hObject, eventdata, handles)
-% hObject    handle to NormalMode_rbtn (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(handles.DataMode_rbtn,'Value')
-    set(handles.DataMode_rbtn,'Value',0)
-    mode_question = questdlg('Exit data mode? (Run history will be lost...)','Change mode...','Yes','No','No');
-else
-    mode_question = 'Yes';
-end
-
-switch mode_question
-    case 'Yes'
-        set(handles.DataMode_rbtn,'Value',0)
-        set(handles.DataParentFolder_etxt,'Enable','Off')
-        set(handles.DataRunNum_etxt,'Enable','Off')
-        set(handles.Reset_btn,'Enable','Off')
-        set(handles.DataCustomName_cbox,'Enable','Off','Value',0)
-        set(handles.DataCustomName_etxt,'Enable','Off')
-        defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-        for n = 1:26
-            set(handles.(['RunFile' num2str(n)]),'BackgroundColor',defaultBackground,'userdata',1);
-            set(handles.(['NumOfRuns' num2str(n)]),'Enable','On')
-        end
-        set(handles.NormalMode_rbtn,'Value',1)
-        
-    case 'No'
-        set(handles.NormalMode_rbtn,'Value',0)
-        set(handles.DataMode_rbtn,'Value',1)
-    case ''
-        set(handles.NormalMode_rbtn,'Value',0)
-        set(handles.DataMode_rbtn,'Value',1)
-end
-% Hint: get(hObject,'Value') returns toggle state of NormalMode_rbtn
-
-
-% --- Executes on button press in DataMode_rbtn.
-function DataMode_rbtn_Callback(hObject, eventdata, handles)
-% hObject    handle to DataMode_rbtn (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-if get(handles.NormalMode_rbtn,'Value')
-    for n = 1:26
-        set(handles.(['RunFile' num2str(n)]),'BackgroundColor','g','userdata',1)
-        set(handles.(['NumOfRuns' num2str(n)]),'Enable','Off')
-    end
-end
-set(handles.NormalMode_rbtn,'Value',0)
-set(handles.DataParentFolder_etxt,'Enable','On')
-set(handles.DataRunNum_etxt,'Enable','On')
-set(handles.Reset_btn,'Enable','On')
-set(handles.DataCustomName_cbox,'Enable','On')
-set(handles.DataMode_rbtn,'Value',1)
-
-% Hint: get(hObject,'Value') returns toggle state of DataMode_rbtn
+% % --- Executes on button press in NormalMode_rbtn.
+% function NormalMode_rbtn_Callback(hObject, eventdata, handles)
+% % hObject    handle to NormalMode_rbtn (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% if get(handles.DataMode_rbtn,'Value')
+%     set(handles.DataMode_rbtn,'Value',0)
+%     mode_question = questdlg('Exit data mode? (Run history will be lost...)','Change mode...','Yes','No','No');
+% else
+%     mode_question = 'Yes';
+% end
+% 
+% switch mode_question
+%     case 'Yes'
+%         set(handles.DataMode_rbtn,'Value',0)
+%         set(handles.DataParentFolder_etxt,'Enable','Off')
+%         set(handles.DataRunNum_etxt,'Enable','Off')
+%         set(handles.Reset_btn,'Enable','Off')
+%         set(handles.DataCustomName_cbox,'Enable','Off','Value',0)
+%         set(handles.DataCustomName_etxt,'Enable','Off')
+%         defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+%         for n = 1:26
+%             set(handles.(['RunFile' num2str(n)]),'BackgroundColor',defaultBackground,'userdata',1);
+%             set(handles.(['NumOfRuns' num2str(n)]),'Enable','On')
+%         end
+%         set(handles.NormalMode_rbtn,'Value',1)
+%         
+%     case 'No'
+%         set(handles.NormalMode_rbtn,'Value',0)
+%         set(handles.DataMode_rbtn,'Value',1)
+%     case ''
+%         set(handles.NormalMode_rbtn,'Value',0)
+%         set(handles.DataMode_rbtn,'Value',1)
+% end
+% % Hint: get(hObject,'Value') returns toggle state of NormalMode_rbtn
 
 
-
-function DataParentFolder_etxt_Callback(hObject, eventdata, handles)
-% hObject    handle to DataParentFolder_etxt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of DataParentFolder_etxt as text
-%        str2double(get(hObject,'String')) returns contents of DataParentFolder_etxt as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function DataParentFolder_etxt_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DataParentFolder_etxt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% % --- Executes on button press in DataMode_rbtn.
+% function DataMode_rbtn_Callback(hObject, eventdata, handles)
+% % hObject    handle to DataMode_rbtn (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% if get(handles.NormalMode_rbtn,'Value')
+%     for n = 1:26
+%         set(handles.(['RunFile' num2str(n)]),'BackgroundColor','g','userdata',1)
+%         set(handles.(['NumOfRuns' num2str(n)]),'Enable','Off')
+%     end
+% end
+% set(handles.NormalMode_rbtn,'Value',0)
+% set(handles.DataParentFolder_etxt,'Enable','On')
+% set(handles.DataRunNum_etxt,'Enable','On')
+% set(handles.Reset_btn,'Enable','On')
+% set(handles.DataCustomName_cbox,'Enable','On')
+% set(handles.DataMode_rbtn,'Value',1)
+% 
+% % Hint: get(hObject,'Value') returns toggle state of DataMode_rbtn
 
 
 
-function DataRunNum_etxt_Callback(hObject, eventdata, handles)
-% hObject    handle to DataRunNum_etxt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of DataRunNum_etxt as text
-%        str2double(get(hObject,'String')) returns contents of DataRunNum_etxt as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function DataRunNum_etxt_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to DataRunNum_etxt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% function DataParentFolder_etxt_Callback(hObject, eventdata, handles)
+% % hObject    handle to DataParentFolder_etxt (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% % Hints: get(hObject,'String') returns contents of DataParentFolder_etxt as text
+% %        str2double(get(hObject,'String')) returns contents of DataParentFolder_etxt as a double
 
 
-% --- Executes on button press in Reset_btn.
-function Reset_btn_Callback(hObject, eventdata, handles)
-% hObject    handle to Reset_btn (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-reset_question = questdlg('Reset data run history?','Reset data run...','Yes','No','No');
-switch reset_question
-    case 'Yes'
-        for n=1:26
-            set(handles.(['RunFile' num2str(n)]),'userdata',1,'backgroundcolor','green')
-        end
-    case 'No'
-end
+% % --- Executes during object creation, after setting all properties.
+% function DataParentFolder_etxt_CreateFcn(hObject, eventdata, handles)
+% % hObject    handle to DataParentFolder_etxt (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    empty - handles not created until after all CreateFcns called
+% 
+% % Hint: edit controls usually have a white background on Windows.
+% %       See ISPC and COMPUTER.
+% if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+%     set(hObject,'BackgroundColor','white');
+% end
+
+
+
+% function DataRunNum_etxt_Callback(hObject, eventdata, handles)
+% % hObject    handle to DataRunNum_etxt (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% % Hints: get(hObject,'String') returns contents of DataRunNum_etxt as text
+% %        str2double(get(hObject,'String')) returns contents of DataRunNum_etxt as a double
+
+
+% % --- Executes during object creation, after setting all properties.
+% function DataRunNum_etxt_CreateFcn(hObject, eventdata, handles)
+% % hObject    handle to DataRunNum_etxt (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    empty - handles not created until after all CreateFcns called
+% 
+% % Hint: edit controls usually have a white background on Windows.
+% %       See ISPC and COMPUTER.
+% if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+%     set(hObject,'BackgroundColor','white');
+% end
+
+
+% % --- Executes on button press in Reset_btn.
+% function Reset_btn_Callback(hObject, eventdata, handles)
+% % hObject    handle to Reset_btn (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% reset_question = questdlg('Reset data run history?','Reset data run...','Yes','No','No');
+% switch reset_question
+%     case 'Yes'
+%         for n=1:26
+%             set(handles.(['RunFile' num2str(n)]),'userdata',1,'backgroundcolor','green')
+%         end
+%     case 'No'
+% end
 
 % --- Executes on button press in AutoLoad_btn.
 function AutoLoad_btn_Callback(hObject, eventdata, handles)
@@ -482,6 +513,10 @@ if setFolder ~= 0
         justname = strrep(justname,'GUIRun_','');
         justname = strrep(justname,'xo','.');
         justname = strrep(justname,'xn','-');
+        if strcmp(justname,'VOID_0')
+            bslash = find(setFolder=='\');
+            justname = setFolder(bslash((end-1)):end-1);
+        end
         assignedFile = {setFile.name setFolder};
         set(handles.(['FileName' num2str(n)]),'String',justname,'userdata',assignedFile)
         set(handles.(['RunFile' num2str(n)]),'enable','on')
@@ -1162,6 +1197,8 @@ function hardstop_btn_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 set(handles.hardstop_btn,'userdata',1)
+set(handles.runall_btn,'userdata',1)
+set(handles.randrunall_btn,'userdata',1)
 
 
 % --- Executes on button press in loadlibrary_btn.
@@ -1178,3 +1215,67 @@ function cleardds_btn_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 run([fileparts(mfilename('fullpath')) '\Functions\resetArdDDS'])
+
+
+% --- Executes on button press in runall_btn.
+function runall_btn_Callback(hObject, eventdata, handles)
+% hObject    handle to runall_btn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(handles.RunStop_btn,'userdata',0) % make sure stop trigger is 0 when 'Run' is selected
+set(handles.hardstop_btn,'userdata',0)
+set(handles.runall_btn,'userdata',0)
+for i=1:str2num(get(handles.runall_etxt,'String'))
+    for j = 1:26
+        if get(handles.RunStop_btn,'userdata') || get(handles.hardstop_btn,'userdata') || get(handles.runall_btn,'userdata')
+            break
+        end
+        ControllerGUI('RunButtons',hObject,eventdata,guidata(hObject),j)
+    end
+    if get(handles.RunStop_btn,'userdata') || get(handles.hardstop_btn,'userdata') || get(handles.runall_btn,'userdata')
+        break
+    end
+end
+
+% --- Executes on button press in randrunall_btn.
+function randrunall_btn_Callback(hObject, eventdata, handles)
+% hObject    handle to randrunall_btn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(handles.RunStop_btn,'userdata',0) % make sure stop trigger is 0 when 'Run' is selected
+set(handles.hardstop_btn,'userdata',0)
+set(handles.randrunall_btn,'userdata',0)
+for i=1:str2num(get(handles.runall_etxt,'String'))
+    runorder = randperm(26);
+    for j = 1:26
+        if get(handles.RunStop_btn,'userdata') || get(handles.hardstop_btn,'userdata') || get(handles.randrunall_btn,'userdata')
+            break
+        end
+        ControllerGUI('RunButtons',hObject,eventdata,guidata(hObject),runorder(j))
+    end
+    if get(handles.RunStop_btn,'userdata') || get(handles.hardstop_btn,'userdata') || get(handles.randrunall_btn,'userdata')
+        break
+    end
+end
+
+
+function runall_etxt_Callback(hObject, eventdata, handles)
+% hObject    handle to runall_etxt (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of runall_etxt as text
+%        str2double(get(hObject,'String')) returns contents of runall_etxt as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function runall_etxt_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to runall_etxt (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

@@ -4,6 +4,10 @@ classdef LineData < handle
         lineName
         array
         devLine
+        hashable
+        hash
+        isdds
+        pass2
     end
     
     properties (Abstract = true)
@@ -36,9 +40,12 @@ classdef LineData < handle
                         error('LineData dispstat must be ''on'' (1) or ''off'' (0).')
                 end
             end
-            
+            obj.hashable = 1;
+            obj.hash = DataHash(obj.lineName);
+%             obj.hash = '0';
+            obj.isdds = 0;
             obj.devLine = devLine;
-            
+            obj.pass2 = 0;
             obj.array = [];
         end
         

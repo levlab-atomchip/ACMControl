@@ -85,37 +85,54 @@ classdef DigitalLineData < LineData
         
         %Main methods
         function startdur(obj,dt,ind,state,tstart,duration)
-            state = obj.checkstate(state);
-            delay = obj.setdelay(state);
-            obj.checkarray(ind);
-            obj.checktime(tstart);
-            obj.checktime(duration);
-            
-            tstop = tstart + duration;
-           
-            istart = round((tstart-delay)/dt)+ind(1);
-            istop = round(tstop/dt)+ind(1)-1;
-            
-            istart = obj.checkindices(ind,istart,istop);
-            obj.array(istart:istop) = obj.(state);
+            if ~obj.pass2 || ~obj.hashable
+                state = obj.checkstate(state);
+                delay = obj.setdelay(state);
+                obj.checktime(tstart);
+                obj.checktime(duration);
+
+                tstop = tstart + duration;
+
+                istart = round((tstart-delay)/dt)+ind(1);
+                istop = round(tstop/dt)+ind(1)-1;
+
+                istart = obj.checkindices(ind,istart,istop);
+
+                if obj.hashable
+                    obj.hash = DataHash([hex2dec(obj.hash),double(dt),double(1),double(istart),double(istop),double(obj.(state))]);
+    %                 obj.hash = DataHash(hex2dec(obj.hash)+istart+istop+obj.(state));
+    %                 obj.hash = DataHash([obj.hash,istart,istop,obj.(state)]);
+                    return
+                end
+                obj.checkarray(ind);
+                obj.array(istart:istop) = obj.(state);
+            end
         end
         
         function stopdur(obj,dt,ind,state,tstop,duration)
-            state = obj.checkstate(state);
-            delay = obj.setdelay(state);
-            obj.checkarray(ind);
-            
-            obj.checktime(tstop);
-            obj.checktime(duration);
-            
-            tstart = tstop - duration;
-            obj.checktime(tstart);
-            
-            istart = round((tstart-delay)/dt)+ind(1);
-            istop = round(tstop/dt)+ind(1)-1;
-            
-            istart = obj.checkindices(ind,istart,istop);
-            obj.array(istart:istop) = obj.(state);
+            if ~obj.pass2 || ~obj.hashable
+                state = obj.checkstate(state);
+                delay = obj.setdelay(state);
+
+                obj.checktime(tstop);
+                obj.checktime(duration);
+
+                tstart = tstop - duration;
+                obj.checktime(tstart);
+
+                istart = round((tstart-delay)/dt)+ind(1);
+                istop = round(tstop/dt)+ind(1)-1;
+
+                istart = obj.checkindices(ind,istart,istop);
+                if obj.hashable
+                    obj.hash = DataHash([hex2dec(obj.hash),double(dt),double(2),double(istart),double(istop),double(obj.(state))]);
+    %                 obj.hash = DataHash([hex2dec([obj.hash),double(istart),double(istop)+double(obj.(state))]);
+    %                 obj.hash = DataHash(hex2dec(obj.hash)+istart+istop,obj.(state));
+                    return
+                end
+                obj.checkarray(ind);
+                obj.array(istart:istop) = obj.(state);
+            end
         end
         
         function ss(obj,dt,ind,state,tstart,tstop)
@@ -123,46 +140,68 @@ classdef DigitalLineData < LineData
         end
         
         function startstop(obj,dt,ind,state,tstart,tstop)
-            state = obj.checkstate(state);
-            delay = obj.setdelay(state);
-            obj.checkarray(ind);
-            
-            obj.checktime(tstart)
-            istart = round((tstart-delay)/dt)+ind(1);
-            
-            if strcmp(tstop,'end')
-                istop = ind(2);
-            else
-                obj.checktime(tstop)
-                istop = round(tstop/dt)+ind(1)-1;
+            if ~obj.pass2 || ~obj.hashable
+%                 disp(sprintf('Poass2 = %i', obj.pass2))
+%                 disp(obj.lineName)
+                state = obj.checkstate(state);
+                delay = obj.setdelay(state);
+
+
+                obj.checktime(tstart)
+                istart = round((tstart-delay)/dt)+ind(1);
+
+                if strcmp(tstop,'end')
+                    istop = ind(2);
+                else
+                    obj.checktime(tstop)
+                    istop = round(tstop/dt)+ind(1)-1;
+                end
+
+                istart = obj.checkindices(ind,istart,istop);
+
+                if obj.hashable
+                    obj.hash = DataHash([hex2dec(obj.hash),double(dt),double(3),double(istart),double(istop),double(obj.(state))]);
+    %                 obj.hash = DataHash(hex2dec(obj.hash)+istart+istop+obj.(state));
+
+                    return
+
+                end
+
+                obj.checkarray(ind);
+                obj.array(istart:istop) = obj.(state);
             end
             
-            istart = obj.checkindices(ind,istart,istop);
-            obj.array(istart:istop) = obj.(state);
         end
         
         function pulse(obj,dt,ind,state,tstart,duration)
-            state = obj.checkstate(state);
-            obj.checkarray(ind);
-            
-            obj.checktime(tstart)
-            obj.checktime(duration)
-            
-            tstop = tstart + duration;
-            
-            istart = round(tstart/dt)+ind(1);
-            istop = round(tstop/dt)+ind(1)-1;
-            
-            istart = obj.checkindices(ind,istart,istop);
-            
-            if (istart-1) > 0 && obj.array(istart-1)==obj.(state)
-                warning('Value preceeding the digital pulse is the same as the pulse value.')
-            end
-            
-            obj.array(istart:istop) = obj.(state);
-            
-            if istop+1 < length(obj.array)
-                obj.array(istop+1:end) = ~(obj.(state));
+            if ~obj.pass2 || ~obj.hashable
+                state = obj.checkstate(state);
+
+
+                obj.checktime(tstart)
+                obj.checktime(duration)
+
+                tstop = tstart + duration;
+
+                istart = round(tstart/dt)+ind(1);
+                istop = round(tstop/dt)+ind(1)-1;
+
+                istart = obj.checkindices(ind,istart,istop);
+                if obj.hashable
+                    obj.hash = DataHash([hex2dec(obj.hash),double(dt),double(4),double(istart),double(istop),double(obj.(state))]);
+    %                 obj.hash = DataHash(hex2dec(obj.hash)+istart+istop+obj.(state));
+                    return
+                end
+                obj.checkarray(ind);
+                if (istart-1) > 0 && obj.array(istart-1)==obj.(state)
+                    warning('Value preceeding the digital pulse is the same as the pulse value.')
+                end
+
+                obj.array(istart:istop) = obj.(state);
+
+                if istop+1 < length(obj.array)
+                    obj.array(istop+1:end) = ~(obj.(state));
+                end
             end
         end
         

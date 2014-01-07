@@ -6,6 +6,11 @@ classdef DDSLineData < handle
         highFreq
         lowFreq
         opMode
+        
+        hash
+        hashable
+        isdds
+        pass2
     end
     
     properties (Dependent)
@@ -80,6 +85,11 @@ classdef DDSLineData < handle
             obj.opMode = '';
 %             obj.sweepEnabled = 0;
             obj.enabled = 0;
+            
+            obj.hashable = 1;
+            obj.hash = DataHash(obj.lineName);
+            obj.isdds = 1;
+            obj.pass2 = 0;
         end
         
         %Accessors
@@ -93,160 +103,184 @@ classdef DDSLineData < handle
         
         %Main methods
         function setfreq(obj,dt,ind,freq,tstart,tstop)
-            obj.checkfreq(freq);
-            obj.checkfreqarray(ind);
-            
-            obj.checktime(tstart)
-            istart = round(tstart/dt)+ind(1);
-            
-            if strcmp(tstop,'end')
-                istop = ind(2);
-            else
-                obj.checktime(tstop)
-                istop = round(tstop/dt) + ind(1)-1;
+            if ~obj.pass2 || ~obj.hashable
+                obj.checkfreq(freq);
+
+
+
+                obj.checktime(tstart)
+                istart = round(tstart/dt)+ind(1);
+
+                if strcmp(tstop,'end')
+                    istop = ind(2);
+                else
+                    obj.checktime(tstop)
+                    istop = round(tstop/dt) + ind(1)-1;
+                end
+
+                istart = obj.checkindices(ind,istart,istop);
+                if obj.hashable
+                    obj.hash = DataHash([hex2dec(obj.hash),double(dt),double(1),double(istart),double(istop),double(freq)]);
+                    return
+                end
+                obj.checkfreqarray(ind);
+                obj.freqarray(istart:istop) = freq;
             end
-            
-            istart = obj.checkindices(ind,istart,istop);
-            obj.freqarray(istart:istop) = freq;
         end
         
         function setfreqsweep(obj,dt,ind,fstart,fstop,tstart,tstop)
-            obj.checkfreq(fstart);
-            obj.checkfreq(fstop);
-            obj.checkfreqarray(ind);
-            
-            obj.checktime(tstart)
-            istart = round(tstart/dt)+ind(1);
-            
-            if strcmp(tstop,'end')
-                istop = ind(2);
-            else
-                obj.checktime(tstop)
-                istop = round(tstop/dt) + ind(1)-1;
+            if ~obj.pass2 || ~obj.hashable
+                obj.checkfreq(fstart);
+                obj.checkfreq(fstop);
+
+
+                obj.checktime(tstart)
+                istart = round(tstart/dt)+ind(1);
+
+                if strcmp(tstop,'end')
+                    istop = ind(2);
+                else
+                    obj.checktime(tstop)
+                    istop = round(tstop/dt) + ind(1)-1;
+                end
+
+                istart = obj.checkindices(ind,istart,istop);
+                if obj.hashable
+                    obj.hash = DataHash([hex2dec(obj.hash),double(dt),double(2),double(istart),double(istop),double(fstart),double(fstop),double(-1)]);
+                    return
+                end
+                obj.checkfreqarray(ind);
+                obj.freqarray(istart:istop) = -1;
+                obj.freqarray(istart) = fstart;
+                obj.freqarray(istop) = fstop;
             end
-            
-            istart = obj.checkindices(ind,istart,istop);
-            
-            obj.freqarray(istart:istop) = -1;
-            obj.freqarray(istart) = fstart;
-            obj.freqarray(istop) = fstop;
         end
         
         function reset(obj,dt,ind,tstart)
-            obj.checkfreqarray(ind);
-            
-            obj.checktime(tstart)
-            istart = round(tstart/dt)+ind(1);
-            
-            istart = obj.checkindices(ind,istart);
-            
-            obj.freqarray(istart:ind(2)) = 0;
+            if ~obj.pass2 || ~obj.hashable
+                obj.checktime(tstart)
+                istart = round(tstart/dt)+ind(1);
+
+                istart = obj.checkindices(ind,istart);
+                if obj.hashable
+                    obj.hash = DataHash([hex2dec(obj.hash),double(dt),double(3),double(istart),double(ind(2)),double(0)]);
+                    return
+                end
+                obj.checkfreqarray(ind);
+                obj.freqarray(istart:ind(2)) = 0;
+            end
         end
         
         function noreset(obj,dt,ind,tstart)
-            obj.checkfreqarray(ind);
-            
-            obj.checktime(tstart)
-            istart = round(tstart/dt)+ind(1);
-            
-            istart = obj.checkindices(ind,istart);
-            
-            obj.freqarray(istart:ind(2)) = -3;
+            if ~obj.pass2 || ~obj.hashable
+                obj.checktime(tstart)
+                istart = round(tstart/dt)+ind(1);
+
+                istart = obj.checkindices(ind,istart);
+                if obj.hashable
+                    obj.hash = DataHash([hex2dec(obj.hash),double(dt),double(4),double(istart),double(ind(2)),double(freq),double(-3)]);
+                    return
+                end
+                obj.checkfreqarray(ind);
+                obj.freqarray(istart:ind(2)) = -3;
+            end
         end
         
         function freqcompile(obj)
-            currFreq = obj.freqarray(1);
-            pcounter = 1;
-            changes = find(diff(obj.freqarray))+1;
-            lengths = [changes(1)-1; diff(changes)];
-            for j = 1:length(changes)
-                i = changes(j);
-                ecounter = lengths(j);
-                phases(pcounter,1:2) = [currFreq ecounter];
-                pcounter = pcounter+1;
-                if currFreq > 0 && obj.freqarray(i) > 0
-                    phases(pcounter,1:2) = [-2 0];
-                    pcounter = pcounter+1;
-                end
-                currFreq = obj.freqarray(i);
-                ecounter = 1;
-                if i == length(obj.freqarray)
+            if ~obj.pass2 || ~obj.hashable
+                currFreq = obj.freqarray(1);
+                pcounter = 1;
+                changes = find(diff(obj.freqarray))+1;
+                lengths = [changes(1)-1; diff(changes)];
+                for j = 1:length(changes)
+                    i = changes(j);
+                    ecounter = lengths(j);
                     phases(pcounter,1:2) = [currFreq ecounter];
+                    pcounter = pcounter+1;
+                    if currFreq > 0 && obj.freqarray(i) > 0
+                        phases(pcounter,1:2) = [-2 0];
+                        pcounter = pcounter+1;
+                    end
+                    currFreq = obj.freqarray(i);
+                    ecounter = 1;
+                    if i == length(obj.freqarray)
+                        phases(pcounter,1:2) = [currFreq ecounter];
+                    end
                 end
-            end
-            if i~=length(obj.freqarray)
-                lastl = length(obj.freqarray)-changes(end)+1;
-                phases(pcounter,1:2) = [currFreq lastl];
-            end
-            
-%             currFreq = obj.freqarray(1);
-%             pcounter = 1;
-%             ecounter = 1;
-%             phases = [];
-%             for i = 2:length(obj.freqarray)
-%                 if obj.freqarray(i) == currFreq
-%                     ecounter = ecounter+1;
-%                     if i == length(obj.freqarray)
-%                         phases(pcounter,1:2) = [currFreq ecounter];
-%                     end
-%                 else
-%                     phases(pcounter,1:2) = [currFreq ecounter];
-%                     pcounter = pcounter+1;
-%                     if currFreq > 0 && obj.freqarray(i) > 0
-%                         phases(pcounter,1:2) = [-2 0];
-%                         pcounter = pcounter+1;
-%                     end
-%                     currFreq = obj.freqarray(i);
-%                     ecounter = 1;
-%                     if i == length(obj.freqarray)
-%                         phases(pcounter,1:2) = [currFreq ecounter];
-%                     end
-%                 end
-%             end
-            
-            wcounter = 1;
-            
-            for i = 1:length(phases(:,1))
-                tstart = sum(phases(1:(i-1),2))+1;
-                
-                switch phases(i,1)
-                    case -3
-                        %write noreset
-                        
-                        %write next freq
-                        fjump = phases(i+1,1);
-                        obj.Writes(wcounter,:) = [tstart -Inf fjump -Inf obj.ch];%
-                        
-                        wcounter = wcounter+1;
-                    case 0
-                        %write reset
-                        
-                        %write next freq
-                        fjump = phases(i+1,1);
-                        obj.Writes(wcounter,:) = [tstart NaN fjump NaN obj.ch];%
-                        
-                        wcounter = wcounter+1;
-                    case -1
-                        %write sweep
-                        fstart = phases(i-1,1);
-                        fstop = phases(i+1,1);
-                        tdur = phases(i,2)+2;
-                        obj.Writes(wcounter,:) = [tstart tdur fstart fstop obj.ch];%
-                        
-                        wcounter = wcounter+1;
-                    case -2
-                        %write jump
-                        fjump = phases(i+1,1);
-                        obj.Writes(wcounter,:) = [tstart Inf fjump Inf obj.ch];%
-                        
-                        wcounter = wcounter+1;
-                    otherwise
-                        if i==1 %length(phases(:,1))==1
-                            fjump = phases(wcounter,1);
-                            obj.Writes(1,:) = [tstart Inf fjump Inf obj.ch];
+                if i~=length(obj.freqarray)
+                    lastl = length(obj.freqarray)-changes(end)+1;
+                    phases(pcounter,1:2) = [currFreq lastl];
+                end
+
+    %             currFreq = obj.freqarray(1);
+    %             pcounter = 1;
+    %             ecounter = 1;
+    %             phases = [];
+    %             for i = 2:length(obj.freqarray)
+    %                 if obj.freqarray(i) == currFreq
+    %                     ecounter = ecounter+1;
+    %                     if i == length(obj.freqarray)
+    %                         phases(pcounter,1:2) = [currFreq ecounter];
+    %                     end
+    %                 else
+    %                     phases(pcounter,1:2) = [currFreq ecounter];
+    %                     pcounter = pcounter+1;
+    %                     if currFreq > 0 && obj.freqarray(i) > 0
+    %                         phases(pcounter,1:2) = [-2 0];
+    %                         pcounter = pcounter+1;
+    %                     end
+    %                     currFreq = obj.freqarray(i);
+    %                     ecounter = 1;
+    %                     if i == length(obj.freqarray)
+    %                         phases(pcounter,1:2) = [currFreq ecounter];
+    %                     end
+    %                 end
+    %             end
+
+                wcounter = 1;
+
+                for i = 1:length(phases(:,1))
+                    tstart = sum(phases(1:(i-1),2))+1;
+
+                    switch phases(i,1)
+                        case -3
+                            %write noreset
+
+                            %write next freq
+                            fjump = phases(i+1,1);
+                            obj.Writes(wcounter,:) = [tstart -Inf fjump -Inf obj.ch];%
+
                             wcounter = wcounter+1;
-                            warning('DDSLineData:ddst0','First DDS frequency set at t=0. There will be a 400 us lag in setting this frequency.');
-                        end
+                        case 0
+                            %write reset
+
+                            %write next freq
+                            fjump = phases(i+1,1);
+                            obj.Writes(wcounter,:) = [tstart NaN fjump NaN obj.ch];%
+
+                            wcounter = wcounter+1;
+                        case -1
+                            %write sweep
+                            fstart = phases(i-1,1);
+                            fstop = phases(i+1,1);
+                            tdur = phases(i,2)+2;
+                            obj.Writes(wcounter,:) = [tstart tdur fstart fstop obj.ch];%
+
+                            wcounter = wcounter+1;
+                        case -2
+                            %write jump
+                            fjump = phases(i+1,1);
+                            obj.Writes(wcounter,:) = [tstart Inf fjump Inf obj.ch];%
+
+                            wcounter = wcounter+1;
+                        otherwise
+                            if i==1 %length(phases(:,1))==1
+                                fjump = phases(wcounter,1);
+                                obj.Writes(1,:) = [tstart Inf fjump Inf obj.ch];
+                                wcounter = wcounter+1;
+                                warning('DDSLineData:ddst0','First DDS frequency set at t=0. There will be a 400 us lag in setting this frequency.');
+                            end
+                    end
                 end
             end
         end

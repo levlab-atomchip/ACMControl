@@ -49,7 +49,9 @@ YBias.ss(YRFEvap,0,'end')
 ZBias.ss(ZRFEvap,0,'end')
 
 Quadrupole.ss(HybridMaxBGrad,0,'end')
-
+% disp('RAMPING OFF QUAD FIELD IN HYBRIDEVAP')
+% Quadrupole.linear(HybridMaxBGrad,HybridRampEndB,HybridEvapTime-HybridHoldTime,'end')
+% ZBias.linear(ZRFEvap,ZRampEndB,HybridEvapTime-HybridHoldTime,'end')
 
 MOTRVVA.ss(0,0,'end')
 ImagingVVA.ss(0,0,'end')

@@ -9,10 +9,11 @@ classdef Block
     properties (SetAccess = private)
        devices = cell(1,2);
        deviceCount = 0;
+       deviceNames = java.util.HashMap;
     end
     
     properties (SetAccess = private, GetAccess = private)
-       deviceNames = java.util.HashMap; 
+%        deviceNames = java.util.HashMap; 
     end
     
     methods
@@ -144,6 +145,9 @@ classdef Block
             if(obj.deviceNames.containsKey(deviceName))
                 deviceIndex = obj.deviceNames.get(deviceName);
                 device = obj.devices{deviceIndex,2};
+                %%Matt's addition%%
+%                 obj.devices{deviceIndex,2} = device.removeLineData(lineIndex);
+                %%%%%%%%%%%%%%%%%%
                 device.deviceMap = device.deviceMap.removeLine(lineIndex);
             else
                 error('Device not found!');
@@ -162,8 +166,11 @@ classdef Block
         end
         
         function obj = initializeAllDevices(obj)
+%             disp('Intializing All Devices')
                 for i = 1:size(obj.devices,1)
-                   obj.devices{i,2} = obj.devices{i,2}.initialize();
+%                     disp(sprintf('Digital Lines Count: %i',obj.devices{i,2}.deviceMap.digitalLinesCount))
+%                     disp(sprintf('Analog Lines Count: %i',obj.devices{1,2}.deviceMap.analogLinesCount))
+                    obj.devices{i,2} = obj.devices{i,2}.initialize();
                 end
         end
         

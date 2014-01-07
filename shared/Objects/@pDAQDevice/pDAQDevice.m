@@ -81,9 +81,26 @@ classdef pDAQDevice
             
             %display(obj.deviceMap.digitalLinesCount*obj.timeLine.durationTime*obj.sampleRate);
             
-            obj.rawStorage(1) = {zeros(obj.deviceMap.digitalLinesCount,obj.timeLine.durationTime*obj.sampleRate)};
-            obj.rawStorage(2) = {zeros(obj.deviceMap.analogLinesCount,obj.timeLine.durationTime*obj.sampleRate)};
+%             disp(sprintf('dig: %i',obj.deviceMap.digitalLinesCount))
+%             disp(sprintf('analog: %i',obj.deviceMap.analogLinesCount))
+%             disp(sprintf('time: %i',obj.timeLine.durationTime*obj.sampleRate))
+%             disp(sprintf('timeline: %i',obj.timeLine.durationTime))
+            t = round(obj.timeLine.durationTime*obj.sampleRate);
+%             size(zeros(obj.deviceMap.digitalLinesCount,t))
+            obj.rawStorage(1) = {zeros(obj.deviceMap.digitalLinesCount,t)};
+            obj.rawStorage(2) = {zeros(obj.deviceMap.analogLinesCount,t)};
             
+            
+%             obj.rawStorage(1) = {zeros(obj.deviceMap.digitalLinesCount,obj.timeLine.durationTime*obj.sampleRate)};
+%             obj.rawStorage(2) = {zeros(obj.deviceMap.analogLinesCount,obj.timeLine.durationTime*obj.sampleRate)};
+            %%block rawStorage size is one unit smaller than Experiment's
+            %%%array length...in all cases?
+%             obj.rawStorage(1) = {zeros(obj.deviceMap.digitalLinesCount,obj.timeLine.durationTime*obj.sampleRate+1)};
+%             obj.rawStorage(2) = {zeros(obj.deviceMap.analogLinesCount,obj.timeLine.durationTime*obj.sampleRate+1)};
+
+%             disp(sprintf('length of rawStorage(1): %f' ,size(obj.rawStorage{1},2)))
+%             disp(sprintf('length of rawStorage(2): %f' ,size(obj.rawStorage{2},2)))
+%             disp(size(obj.rawStorage{1}))
             obj.initialized = 1; %Initialization Lock            
         end
         
@@ -100,6 +117,7 @@ classdef pDAQDevice
             if(~lines.containsKey(lineIndex))
                 error('Line is not present. Can not add data!')
             else
+                
                 line = lines.get(lineIndex);
                 ap = int32(startTime*obj.sampleRate) + 1;
                 ep = int32(size(data,1));
@@ -112,8 +130,40 @@ classdef pDAQDevice
                 else 
                     p=2;
                 end
-                    obj.rawStorage{p}(loc,ap:ep) = data;
+%                 disp(sprintf('Size of data: %f,%f',[size(data,1),size(data,2)]))
+%                 disp(sprintf('Size of rawStorage: %f,%f',[size(obj.rawStorage{p}(loc,:),1),size(obj.rawStorage{p}(loc,:),2)]))
+                obj.rawStorage{p}(loc,:) = data;
+                
             end
+        end
+        
+        function obj = removeLineData(obj, lineIndex)
+            if(obj.initialized ~= 1)
+                error('Device has not been initialized!')
+            end
+            
+            lines = obj.deviceMap.lineCollection;
+            
+            if(~lines.containsKey(lineIndex))
+                error('Line is not present. Can not remove data!')
+            else
+                line = lines.get(lineIndex);
+                loc = int32(line.get(1));
+                
+                p = 0;
+                if(size(line) == 3)
+                    %Digital Line
+                    p = 1;
+                else 
+                    p=2;
+                end
+                    
+                    disp(loc)
+                    disp(size(obj.rawStorage{p}))
+                    obj.rawStorage{p}(loc,:) = [];
+                    
+            end
+            return
         end
         
         

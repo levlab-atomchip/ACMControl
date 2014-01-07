@@ -26,6 +26,7 @@ ODTVVA.ss(MaxODTPwr,0,'end')
 ODTVVA.ss(OptEvapEndPwr,0,'end')
 ODTVVA.quadratic(a2,a1,a0,0,OptEvapSweepTime)
 if RECOMPRESSODT
+%     ODTVVA.linear(OptEvapEndPwr,RecompressValue,OptEvapSweepTime,RecompressTime+OptEvapSweepTime)
     ODTVVA.linear(OptEvapODTVVAEnd,RecompressValue,OptEvapSweepTime,RecompressTime+OptEvapSweepTime)
     ODTVVA.ss(RecompressValue,RecompressTime+OptEvapSweepTime, 'end')
 end
@@ -49,32 +50,58 @@ MagellanRepumper.ss('off',0,'end')
 ODTIMGShutter.ss('off',0,'end')
 
 %% Coils
-XBias.ss(XOptEvap,0,'end')
-YBias.ss(YOptEvap,0,'end')
-ZBias.ss(ZOptEvap,0,'end')
+XBias.ss(XOptEvap,0,OptEvapSweepTime)
+YBias.ss(YOptEvap,0,OptEvapSweepTime)
+ZBias.ss(ZOptEvap,0,OptEvapSweepTime)
+if RECOMPRESSODT
+%     XBias.ss(XOptEvap,OptEvapSweepTime,OptEvapSweepTime+RecompressTime)
+%     YBias.ss(YOptEvap,OptEvapSweepTime,OptEvapSweepTime+RecompressTime)
+%     ZBias.ss(ZOptEvap,OptEvapSweepTime,OptEvapSweepTime+RecompressTime)
 
-% XBias.ss(XOptEvap,0,OptEvapSweepTime)
-% YBias.ss(YOptEvap,0,OptEvapSweepTime)
-% ZBias.ss(ZOptEvap,0,OptEvapSweepTime)
+%     XBias.linear(XOptEvap,XOptEvapHold,OptEvapSweepTime+RecompressTime,MagSweepTime+OptEvapSweepTime+RecompressTime)
+%     YBias.linear(YOptEvap,YOptEvapHold,OptEvapSweepTime+RecompressTime,MagSweepTime+OptEvapSweepTime+RecompressTime)
+%     ZBias.linear(ZOptEvap,ZOptEvapHold,OptEvapSweepTime+RecompressTime,MagSweepTime+OptEvapSweepTime+RecompressTime)
 
-XBias.linear(XOptEvap,0,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
-YBias.linear(YOptEvap,0,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
-ZBias.linear(ZOptEvap,0,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
-% 
-% XBias.ss(0,MagSweepTime+OptEvapSweepTime,'end')
-% YBias.ss(0,MagSweepTime+OptEvapSweepTime,'end')
-% ZBias.ss(0,MagSweepTime+OptEvapSweepTime,'end')
+    XBias.linear(XOptEvap,XOptEvapHold,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
+    YBias.linear(YOptEvap,YOptEvapHold,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
+    ZBias.linear(ZOptEvap,ZOptEvapHold,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
 
-% Quadrupole.ss(O,0,'end')
-% Quadrupole.linear(OptEvapStartBGrad,OptEvapEndBGrad,0,OptEvapSweepTime)
-% Quadrupole.linear(OptEvapEndBGrad,0,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
 
-% Quadrupole.ss(OptEvapEndBGrad,0,'end')
+%     XBias.ss(XOptEvapHold,MagSweepTime+OptEvapSweepTime+RecompressTime,'end')
+%     YBias.ss(YOptEvapHold,MagSweepTime+OptEvapSweepTime+RecompressTime,'end')
+%     ZBias.ss(ZOptEvapHold,MagSweepTime+OptEvapSweepTime+RecompressTime,'end')
+
+    XBias.ss(XOptEvapHold,MagSweepTime+OptEvapSweepTime,'end')
+    YBias.ss(YOptEvapHold,MagSweepTime+OptEvapSweepTime,'end')
+    ZBias.ss(ZOptEvapHold,MagSweepTime+OptEvapSweepTime,'end')
+
+
+%     XBias.ss(XOptEvapHold,MagSweepTime+OptEvapSweepTime+RecompressTime,MagSweepTime+OptEvapSweepTime+RecompressTime+MagHoldTime)
+%     YBias.ss(YOptEvapHold,MagSweepTime+OptEvapSweepTime+RecompressTime,MagSweepTime+OptEvapSweepTime+RecompressTime+MagHoldTime)
+%     ZBias.ss(ZOptEvapHold,MagSweepTime+OptEvapSweepTime+RecompressTime,MagSweepTime+OptEvapSweepTime+RecompressTime+MagHoldTime)
+else
+    XBias.linear(XOptEvap,XOptEvapHold,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
+    YBias.linear(YOptEvap,YOptEvapHold,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
+    ZBias.linear(ZOptEvap,ZOptEvapHold,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
+    
+    XBias.ss(XOptEvapHold,MagSweepTime+OptEvapSweepTime,'end')
+    YBias.ss(YOptEvapHold,MagSweepTime+OptEvapSweepTime,'end')
+    ZBias.ss(ZOptEvapHold,MagSweepTime+OptEvapSweepTime,'end')
+end
+
+
 Quadrupole.linear(OptEvapStartBGrad,OptEvapEndBGrad,0,OptEvapSweepTime)
-Quadrupole.ss(OptEvapEndBGrad,OptEvapSweepTime, OptEvapSweepTime + RecompressTime)
-Quadrupole.linear(OptEvapEndBGrad,HoldBGrad,OptEvapSweepTime+RecompressTime,RecompressTime+OptEvapSweepTime+MagSweepTime)
-Quadrupole.ss(HoldBGrad,OptEvapSweepTime+RecompressTime+MagSweepTime,'end')
+if RECOMPRESSODT
+%     Quadrupole.ss(OptEvapEndBGrad,OptEvapSweepTime, OptEvapSweepTime + RecompressTime)
+%     Quadrupole.linear(OptEvapEndBGrad,HoldBGrad,OptEvapSweepTime+RecompressTime,RecompressTime+OptEvapSweepTime+MagSweepTime)
+%     Quadrupole.ss(HoldBGrad,OptEvapSweepTime+RecompressTime+MagSweepTime,'end')
 
+    Quadrupole.linear(OptEvapEndBGrad,HoldBGrad,OptEvapSweepTime,MagSweepTime+OptEvapSweepTime)
+    Quadrupole.ss(HoldBGrad,OptEvapSweepTime+MagSweepTime,'end')
+else
+    Quadrupole.linear(OptEvapEndBGrad,HoldBGrad,OptEvapSweepTime,OptEvapSweepTime+MagSweepTime)
+    Quadrupole.ss(HoldBGrad,OptEvapSweepTime+MagSweepTime,'end')
+end
 
 MOTRVVA.ss(0,0,'end')
 ImagingVVA.ss(0,0,'end')
